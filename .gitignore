@@ -1,0 +1,9 @@
+# .gitignore
+__pycache__/
+*.pyc
+.DS_Store
+.env
+venv/
+.vscode/
+# Se não quiser enviar o banco de dados (gerar um novo no deploy), descomente a linha abaixo:
+# *.db
