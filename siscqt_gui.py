@@ -255,8 +255,8 @@ def render_aba(nome, idx):
         analise_bari = DiagnosticoEngenharia.analisar_baricentro(df_res, p['trafo_kva'])
         
         # Abas
-        t_diag, t_tec, t_bal, t_vis, t_sim, t_doc = st.tabs([
-            "🔍 Diagnóstico", "📋 Tabela Técnica", "⚖️ Balanceamento", "🕸️ Diagrama", "🧪 Simulação", "🗂️ Documentação"
+        t_diag, t_tec, t_bal, t_vis, t_int, t_sim, t_doc = st.tabs([
+        "🔍 Diagnóstico", "📋 Tabela Técnica", "⚖️ Balanceamento", "🕸️ Diagrama Estático", "🎛️ Canvas Interativo", "🧪 Simulação", "🗂️ Documentação"
         ])
 
         with t_diag:
