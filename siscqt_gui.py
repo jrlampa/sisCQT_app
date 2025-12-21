@@ -443,3 +443,105 @@ def _executar_calculo(nome, df_input):
     df_res, kpis, avisos = ElectricalEngine.calcular(df_input, st.session_state.params[nome], cfg_ctx)
     st.session_state.resultados[nome] = {"df": df_res, "kpis": kpis, "avisos": avisos}
     st.rerun()
+    
+# --- NOVO: MÓDULO DE COMPARAÇÃO UI ---
+def render_page_compare():
+    st.markdown("### ⚖️ Comparativo de Cenários (De/Para)")
+    st.info("Ferramenta de apoio à decisão: Compare indicadores técnicos e financeiros entre o cenário atual e o projetado.")
+    
+    if len(st.session_state.lista_abas) < 2:
+        st.warning("Você precisa de pelo menos 2 cenários (abas) criados para fazer uma comparação.")
+        return
+
+    # 1. Controles de Seleção
+    c1, c2, c3 = st.columns([3, 3, 2])
+    
+    with c1:
+        cenario_base = st.selectbox("1. Cenário Base (Antes):", st.session_state.lista_abas, index=0, key="sel_base")
+    
+    with c2:
+        # Tenta selecionar o segundo item por padrão
+        idx_b = 1 if len(st.session_state.lista_abas) > 1 else 0
+        cenario_proj = st.selectbox("2. Cenário Proposto (Depois):", st.session_state.lista_abas, index=idx_b, key="sel_proj")
+        
+    with c3:
+        st.write("") # Espaçador visual
+        st.write("")
+        btn_processar = st.button("Calcular Comparativo 🚀", type="primary", use_container_width=True)
+        
+    st.divider()
+
+    if btn_processar:
+        # Validação: Os cenários precisam ter sido calculados previamente
+        if cenario_base not in st.session_state.resultados or cenario_proj not in st.session_state.resultados:
+            st.error("⚠️ Um dos cenários selecionados ainda não foi calculado!")
+            st.markdown(f"Por favor, vá na aba **Projetos**, abra as abas **{cenario_base}** e **{cenario_proj}** e clique em 'PROCESSAR CÁLCULO' em cada uma.")
+            return
+
+        # Importação Tardia (Lazy Import) para evitar ciclos e erros se o arquivo não existir
+        try:
+            from siscqt_compare import ComparadorEngine
+        except ImportError:
+            st.error("Arquivo 'siscqt_compare.py' não encontrado. Verifique a instalação.")
+            return
+
+        # Busca dados da memória
+        dados_a = st.session_state.resultados[cenario_base]
+        dados_b = st.session_state.resultados[cenario_proj]
+        
+        full_cfg = {
+            'cabos': st.session_state.config_cabos, 
+            'ips': st.session_state.config_ips
+        }
+
+        # Processa
+        relatorio = ComparadorEngine.gerar_relatorio_comparativo(cenario_base, dados_a, cenario_proj, dados_b, full_cfg)
+        k = relatorio['kpis']
+        
+        # --- EXIBIÇÃO ---
+        st.subheader("1. Indicadores de Impacto")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        # Ocupação Trafo
+        delta_oc = k['ocupacao']['v2'] - k['ocupacao']['v1']
+        col1.metric("Ocupação", f"{k['ocupacao']['v2']:.1f}%", f"{delta_oc:.1f}%", delta_color="inverse")
+        
+        # Queda de Tensão
+        delta_qt = k['queda_max']['v2'] - k['queda_max']['v1']
+        col2.metric("Queda Máxima", f"{k['queda_max']['v2']:.2f}%", f"{delta_qt:.2f}%", delta_color="inverse")
+        
+        # Custo (Investimento)
+        investimento = k['custo']['v2'] - k['custo']['v1']
+        # Se o investimento é positivo (gastou mais), mostramos normal. Se economizou, mostramos verde.
+        col3.metric("Capex Estimado (Mat)", f"R$ {k['custo']['v2']:,.2f}", f"Diff: R$ {investimento:,.2f}", delta_color="off")
+        
+        # Demanda
+        delta_dem = k['demanda']['v2'] - k['demanda']['v1']
+        col4.metric("Demanda", f"{k['demanda']['v2']:.1f} kVA", f"{delta_dem:.1f}", delta_color="off")
+        
+        st.markdown("---")
+        
+        # Tabela de Obras
+        st.subheader("2. Lista de Intervenções Físicas (Recondutoração)")
+        df_obras = relatorio['obras']
+        
+        if not df_obras.empty:
+            st.caption(f"Foram identificados **{len(df_obras)} trechos** onde houve alteração de condutor.")
+            st.dataframe(
+                df_obras, 
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Melhoria QT (%)": st.column_config.NumberColumn(format="%.2f pp"),
+                    "Extensão (m)": st.column_config.NumberColumn(format="%.0f m")
+                }
+            )
+            
+            # Resumo de Materiais (BOM Simples)
+            with st.expander("📦 Ver Resumo de Materiais (Metragem Total)"):
+                resumo = df_obras.groupby('Para (Projetado)')['Extensão (m)'].sum().reset_index()
+                st.dataframe(resumo, use_container_width=True)
+        else:
+            st.success("✅ Não há alterações de cabos nos pontos comuns entre os cenários selecionados.")
+            st.info("Se você adicionou pontos novos (expansão de rede), eles contam no custo total, mas não aparecem como 'troca' de cabo.")

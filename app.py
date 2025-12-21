@@ -9,6 +9,7 @@ from siscqt_constantes import DEFAULT_PARAMS, COL_MAPPING
 from siscqt_db import DatabaseManager
 from siscqt_engine import ElectricalEngine
 from siscqt_gui import render_aba, render_config_page
+from siscqt_gui import render_aba, render_config_page, render_page_compare # <--- Adicione render_page_compare
 
 # 1. Configuração e Logging
 st.set_page_config(page_title="SisCQT - Enterprise V24", page_icon="⚡", layout="wide")
@@ -57,6 +58,12 @@ def main():
     if st.sidebar.button("🏠 Projetos", use_container_width=True):
         st.session_state.view_mode = "main"
         st.rerun()
+        
+    # --- BOTÃO DE COMPARAÇÃO ---
+    if st.sidebar.button("⚖️ Comparar Cenários", use_container_width=True):
+        st.session_state.view_mode = "compare"
+        st.rerun()
+    # ------------------
     
     if st.sidebar.button("⚙️ Configurações", use_container_width=True):
         st.session_state.view_mode = "config"
@@ -65,6 +72,18 @@ def main():
     st.sidebar.divider()
 
     # --- ROTEAMENTO DE PÁGINAS ---
+    # 1. Config
+if st.session_state.view_mode == "config":
+    render_config_page(db)
+    _render_creditos()
+    return
+
+# 2. COMPARAÇÃO (NOVO)
+if st.session_state.view_mode == "compare":
+    render_page_compare()
+    _render_creditos()
+    return
+
     if st.session_state.view_mode == "config":
         render_config_page(db)
         # Créditos no rodapé da sidebar mesmo na config
