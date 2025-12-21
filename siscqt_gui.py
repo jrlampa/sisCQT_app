@@ -9,7 +9,9 @@ from fpdf import FPDF
 from siscqt_engine import ElectricalEngine
 from siscqt_utils import DiagnosticoEngenharia, SimuladorReadequacao
 from siscqt_constantes import DEFAULT_COL_ORDER, MEMORIAL_TEXTO
-from siscqt_visual import gerar_diagrama 
+from siscqt_visual import gerar_diagrama
+from siscqt_canvas import render_interactive_diagram
+
 
 # --- GERAÇÃO DE PDF ---
 def safe_text(text):
@@ -311,7 +313,19 @@ def render_aba(nome, idx):
                 pass 
             grafico = gerar_diagrama(df_res, limites, baricentro_info=b_info)
             if grafico: st.graphviz_chart(grafico)
+            
+        with t_vis:
+            # (Seu código antigo do Graphviz fica aqui)
+            # Sugiro renomear o título visual para "Diagrama Estático (Impressão)"
+            pass
 
+    # --- NOVO BLOCO ---
+        with t_int:
+            if render_interactive_diagram:
+                render_interactive_diagram(df_res)
+            else:
+                st.error("Biblioteca 'streamlit-flow' não instalada. Rode: pip install streamlit-flow")
+                
         # --- NOVA LÓGICA DE SIMULAÇÃO (CORRIGIDA) ---
         with t_sim:
             render_simulation_module(nome, idx, df_res, p)
