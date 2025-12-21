@@ -10,6 +10,7 @@ from siscqt_engine import ElectricalEngine
 from siscqt_utils import DiagnosticoEngenharia, SimuladorReadequacao
 from siscqt_constantes import DEFAULT_COL_ORDER, MEMORIAL_TEXTO
 from siscqt_visual import gerar_diagrama 
+from siscqt_protecao import EngineProtecao
 
 # --- GERAÇÃO DE PDF ---
 def safe_text(text):
@@ -253,10 +254,52 @@ def render_aba(nome, idx):
         analise_bari = DiagnosticoEngenharia.analisar_baricentro(df_res, p['trafo_kva'])
         
         # Abas
-        t_diag, t_tec, t_bal, t_vis, t_sim, t_doc = st.tabs([
-            "🔍 Diagnóstico", "📋 Tabela Técnica", "⚖️ Balanceamento", "🕸️ Diagrama", "🧪 Simulação", "🗂️ Documentação"
-        ])
+        t_diag, t_tec, t_bal, t_prot, t_vis, t_int, t_sim, t_doc = st.tabs([
+        "🔍 Diagnóstico", "📋 Tabela Técnica", "⚖️ Balanceamento", "🛡️ Proteção", 
+        "🕸️ Diagrama Estático", "🎛️ Canvas Interativo", "🧪 Simulação", "🗂️ Documentação"])
 
+        with t_prot:
+            st.markdown("#### 🛡️ Estudo de Proteção e Curto-Circuito")
+            
+            # Inputs
+            c_elo, c_info = st.columns([1, 3])
+            with c_elo:
+                # Sugere o elo com base no kVA atual
+                sugestao = EngineProtecao.SUGESTAO_ELO.get(p['trafo_kva'], "??")
+                elo_sel = st.selectbox("Elo Fusível (MT)", list(EngineProtecao.DB_ELOS_CORRENTE.keys()), index=list(EngineProtecao.DB_ELOS_CORRENTE.keys()).index(sugestao) if sugestao in EngineProtecao.DB_ELOS_CORRENTE else 0)
+            with c_info:
+                st.info(f"Para Trafo **{p['trafo_kva']} kVA**, o padrão Enel/Rio sugere Elo **{sugestao}**.")
+
+            if st.button("⚡ Calcular Curto-Circuito (ICC)", type="primary"):
+                with st.spinner("Calculando impedâncias e falhas..."):
+                    df_prot, elo_usado = EngineProtecao.executar_calculo_icc(df_res, p['trafo_kva'], elo_sel)
+                    st.session_state[f"res_prot_{nome}"] = df_prot
+            
+            # Exibe Resultados se já calculou
+            if f"res_prot_{nome}" in st.session_state:
+                res_p = st.session_state[f"res_prot_{nome}"]
+                
+                # Cards de Resumo
+                min_icc = res_p['ICC_A'].min()
+                pior_ponto = res_p.loc[res_p['ICC_A'].idxmin()]['PONTO']
+                status_geral = "VULNERÁVEL" if any("FALHA" in s for s in res_p['STATUS_PROT']) else "PROTEGIDO"
+                
+                k1, k2, k3 = st.columns(3)
+                k1.metric("ICC Mínimo (Ponta)", f"{min_icc:.0f} A", f"Ponto {pior_ponto}", delta_color="off")
+                k2.metric("Status da Rede", status_geral, delta_color="normal" if status_geral=="PROTEGIDO" else "inverse")
+                
+                st.markdown("##### Detalhamento por Ponto")
+                st.dataframe(
+                    res_p[['PONTO', 'METROS', 'CABO', 'R_ACUM', 'ICC_A', 'STATUS_PROT']],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "R_ACUM": st.column_config.NumberColumn("R(Ω) Acum.", format="%.4f"),
+                        "ICC_A": st.column_config.NumberColumn("ICC (A)", format="%.0f"),
+                        "STATUS_PROT": st.column_config.TextColumn("Sensibilidade")
+                    }
+                )
+        
         with t_diag:
             st.markdown("#### Análise Técnica do Circuito")
             c_left, c_right = st.columns(2, gap="large")
