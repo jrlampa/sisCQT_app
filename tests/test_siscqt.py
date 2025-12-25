@@ -3,10 +3,16 @@ import pytest
 import pandas as pd
 import os
 import shutil
-from siscqt_engine import ElectricalEngine
-from siscqt_utils import SimuladorReadequacao
-from siscqt_db import DatabaseManager
-from siscqt_constantes import DEFAULT_PARAMS
+import sys
+
+# Garante que o Python encontre a pasta 'backend' na raiz
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from backend.engine import ElectricalEngine
+from backend.utils import SimuladorReadequacao
+from backend.db import DatabaseManager
+from backend.constantes import DEFAULT_PARAMS
+import backend.constantes as constantes_global  # Para alterar o DB_FILE
 
 # --- FIXTURES (DADOS DE EXEMPLO) ---
 
@@ -14,15 +20,12 @@ from siscqt_constantes import DEFAULT_PARAMS
 @pytest.fixture
 def config_mock():
     """Cria uma configuração simulada de Cabos e IPs para os testes."""
-    # Dicionário SIMPLES (O que o Engine usa para calcular)
     cabos_simple = {"CABO_FINO": 1.0, "CABO_MEDIO": 0.5, "CABO_GROSSO": 0.1}
-    # Dicionário COMPLETO (O que vem do Banco de Dados/Interface)
     cabos_full = {
         "CABO_FINO": {"coef": 1.0, "preco": 10},
         "CABO_MEDIO": {"coef": 0.5, "preco": 20},
         "CABO_GROSSO": {"coef": 0.1, "preco": 50},
     }
-
     ips = {"IP 100W": 100.0, "Sem IP": 0.0}
     perfis = {"Padrão": {"cqt_max": 5.0, "sobrecarga_max": 100.0}}
 
@@ -84,7 +87,6 @@ def test_calculo_queda_tensao(df_simples, config_mock):
     params["trafo_kva"] = 112.5
     params["perfil"] = "Padrão"
 
-    # O Engine precisa do dicionário "achatado" (apenas coeficientes)
     config_context = {
         "cabos": config_mock["cabos"],
         "ips": config_mock["ips"],
@@ -110,7 +112,7 @@ def test_fator_demanda():
     assert fd_1 > fd_100
 
 
-# --- TESTES DE SIMULAÇÃO (CORRIGIDO) ---
+# --- TESTES DE SIMULAÇÃO ---
 
 
 def test_simulador_recondutoracao(df_simples, config_mock):
@@ -120,8 +122,6 @@ def test_simulador_recondutoracao(df_simples, config_mock):
     df_ruim = df_simples.copy()
     df_ruim.loc[df_ruim["PONTO"] == "POSTE_B", "METROS"] = 5000
 
-    # [FIX 1] Passamos 'cabos' (dicionário simples com floats) e não 'cabos_full' (dicts complexos)
-    # O engine dentro do simulador não sabe lidar com dicionários de preço, apenas floats de coeficiente.
     config_full = {
         "cabos": config_mock["cabos"],
         "ips": config_mock["ips"],
@@ -142,15 +142,14 @@ def test_simulador_recondutoracao(df_simples, config_mock):
     assert resultado["resolvido"] is True or resultado["iteracoes"] > 0
 
 
-# --- TESTE DE BANCO DE DADOS (CORRIGIDO) ---
+# --- TESTE DE BANCO DE DADOS ---
 
 
 def test_database_crud():
     db_test_file = "test_db.sqlite"
 
-    import siscqt_constantes
-
-    siscqt_constantes.DB_FILE = db_test_file
+    # [IMPORTANTE] Patch no módulo de constantes importado pelo backend
+    constantes_global.DB_FILE = db_test_file
 
     DatabaseManager._instance = None
     db = DatabaseManager()
@@ -158,8 +157,6 @@ def test_database_crud():
     nome_proj = "PROJETO_TESTE_PYTEST"
 
     try:
-        # [FIX 2] Usar colunas completas para evitar KeyError no DB
-        # Criamos manualmente ou usamos o template e preenchemos
         df_save = pd.DataFrame(
             {
                 "PONTO": ["TRAFO"],
@@ -194,8 +191,8 @@ def test_database_crud():
         assert ok is True
 
     finally:
-        if os.path.exists(siscqt_constantes.DB_FILE):
+        if os.path.exists(db_test_file):
             try:
-                os.remove(siscqt_constantes.DB_FILE)
+                os.remove(db_test_file)
             except:
                 pass

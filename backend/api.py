@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Any
 
 # Importa o Motor Validado
-from siscqt_engine import ElectricalEngine
-from siscqt_constantes import DEFAULT_CABOS, DEFAULT_IPS, DEFAULT_PERFIS
+from backend.engine import ElectricalEngine
+from backend.constantes import DEFAULT_CABOS, DEFAULT_IPS, DEFAULT_PERFIS
 
 # --- CONFIGURAÇÃO DA API ---
 app = FastAPI(

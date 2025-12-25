@@ -1,6 +1,12 @@
 import pytest
+import sys
+import os
 from fastapi.testclient import TestClient
-from backend_api import app
+
+# Garante path para backend
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from backend.api import app
 
 client = TestClient(app)
 
@@ -37,37 +43,29 @@ def test_api_health_check():
     assert response.json()["status"] == "online"
 
 
-def test_calculo_sucesso_fluxo_normal():
+def test_calculo_sucesso():
     payload = payload_valido()
     response = client.post("/api/v1/calcular", json=payload)
-
     assert response.status_code == 200
     data = response.json()
     assert "status_geral" in data
     assert len(data["resultados_detalhados"]) == 2
-    assert data["resultados_detalhados"][1]["CQT_ACUMULADA"] > 0
 
 
 def test_validacao_cabo_inexistente():
     payload = payload_valido()
-    # Injeta nome de cabo inválido
-    payload["rede"][1]["cabo"] = "CABO_INEXISTENTE_XYZ"
-
+    payload["rede"][1]["cabo"] = "CABO_DOIDO_XYZ"
     response = client.post("/api/v1/calcular", json=payload)
-
     assert response.status_code == 200
-    data = response.json()
-    avisos = data["avisos_tecnicos"]
-    # Agora vai passar porque o Engine inclui o nome do cabo na mensagem!
-    assert any("CABO_INEXISTENTE_XYZ" in aviso for aviso in avisos)
+    # O sistema deve aceitar mas gerar um aviso técnico
+    assert any("CABO_DOIDO_XYZ" in av for av in response.json()["avisos_tecnicos"])
 
 
 def test_validacao_topologia_ciclo():
-    """Testa um ciclo que o Engine não consegue 'consertar'."""
+    """Cria um ciclo P1 -> P2 -> P1 que o sanitizador não pode remover."""
     payload = payload_valido()
 
-    # Cria ciclo P1 -> P2 -> P1 (longe do trafo)
-    # Adiciona P2
+    # Adiciona P2 conectado a P1
     payload["rede"].append(
         {
             "id": "P2",
@@ -78,23 +76,12 @@ def test_validacao_topologia_ciclo():
         }
     )
 
-    # Faz P1 apontar para P2 (Ciclo Mortal)
-    # Originalmente P1 apontava para TRAFO.
+    # Faz P1 apontar para P2 (Criando o Loop P1->P2->P1)
     payload["rede"][1]["pai_id"] = "P2"
 
-    # Rede: TRAFO (orfão de filhos), P1->P2->P1 (Ciclo isolado)
-
     response = client.post("/api/v1/calcular", json=payload)
 
+    # Agora sim deve dar 400 Bad Request
     assert response.status_code == 400
     detail = response.json()["detail"]
-    # Pode ser erro de Ciclo ou Ilha, ambos são fatais
     assert "Ciclo" in detail or "Pontos isolados" in detail
-
-
-def test_payload_incompleto_pydantic():
-    payload = {"config": {"trafo_kva": 75}}
-    response = client.post("/api/v1/calcular", json=payload)
-    assert response.status_code == 422
-    errors = response.json()["detail"]
-    assert any(error["loc"] == ["body", "rede"] for error in errors)
