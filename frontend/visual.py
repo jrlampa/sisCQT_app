@@ -1,97 +1,65 @@
-# siscqt_visual.py
-import graphviz
+# frontend/visual.py
 import streamlit as st
-import pandas as pd
-import math
 
 
-def gerar_diagrama(
-    df: pd.DataFrame, limites: dict = None, baricentro_info: dict = None
-):
-    """
-    Gera objeto Graphviz otimizado.
-    Aceita 'baricentro_info' {'ponto_proximo': 'XYZ', 'distancia': 123.0}
-    """
-    if df.empty:
+def gerar_diagrama(df, limites):
+    try:
+        import graphviz
+    except ImportError:
+        st.warning("⚠️ Biblioteca 'graphviz' não instalada no Python.")
         return None
 
-    dot = graphviz.Digraph(comment="Rede SisCQT")
-    dot.attr(rankdir="TB", splines="ortho", nodesep="0.5", ranksep="0.5")
-    dot.attr("edge", arrowhead="none", penwidth="1.2", color="#424242")
+    try:
+        dot = graphviz.Digraph(comment="Rede BT")
+        dot.attr(rankdir="LR", size="10,10", ratio="fill")
 
-    lim_cqt = limites.get("cqt_max", 6.0) if limites else 6.0
+        # Cores baseadas nos limites
+        def get_color(val, limit, is_ocup=False):
+            if val > limit:
+                return "red"
+            if val > limit * 0.9:
+                return "orange"
+            return "green" if is_ocup else "black"
 
-    # Identifica ponto do baricentro para destaque
-    ponto_baricentro = baricentro_info.get("ponto_proximo") if baricentro_info else None
+        # Nós
+        for _, row in df.iterrows():
+            ponto = str(row["PONTO"])
+            cqt = row.get("CQT_ACUMULADA", 0.0)
 
-    for _, row in df.iterrows():
-        ponto = str(row["PONTO"]).strip()
-        montante = str(row["MONTANTE"]).strip()
-        if not ponto or ponto == "!!SEM_NOME!!":
-            continue
+            # Estilo do Nó
+            fill = "white"
+            color = get_color(cqt, limites.get("cqt_max", 6.0))
+            if ponto == "TRAFO":
+                fill = "lightgrey"
+                color = "black"
 
-        try:
-            cqt = float(row.get("CQT_ACUMULADA", 0.0))
-        except:
-            cqt = 0.0
-
-        fillcolor = "white"
-        color = "black"
-        penwidth = "1.0"
-
-        # Cores Normativas
-        if cqt > lim_cqt:
-            fillcolor = "#FFCDD2"
-            color = "#C62828"
-            penwidth = "2.0"
-        elif cqt > (lim_cqt * 0.8):
-            fillcolor = "#FFE0B2"
-            color = "#EF6C00"
-
-        # Destaque do Baricentro (Sobrepõe se for o caso)
-        if ponto == ponto_baricentro:
-            fillcolor = "#E1BEE7"  # Roxo claro
-            color = "#8E24AA"
-            penwidth = "3.0"
-
-        label_ext = f"{ponto}"
-        if cqt > 0:
-            label_ext += f"\n({cqt:.1f}%)"
-
-        if ponto == ponto_baricentro:
-            label_ext += "\n[Baricentro]"
-
-        if ponto == "TRAFO":
+            label = f"{ponto}\n{cqt:.2f}%"
             dot.node(
                 ponto,
-                label="TRAFO",
-                shape="rect",
-                style="filled, rounded",
-                fillcolor="#2196F3",
-                fontcolor="white",
-                color="#0D47A1",
-                fixedsize="true",
-                width="0.8",
-                height="0.4",
+                label,
+                style="filled",
+                fillcolor=fill,
+                color=color,
+                shape="box" if ponto == "TRAFO" else "ellipse",
+            )
+
+        # Arestas
+        for _, row in df.iterrows():
+            ponto = str(row["PONTO"])
+            pai = str(row["MONTANTE"])
+            if pai and pai in df["PONTO"].values:
+                # Estilo da Linha (Vermelha se o trecho tiver problema)
+                # Aqui simplificado para preto, mas pode ser dinâmico
+                dot.edge(pai, ponto)
+
+        return dot
+
+    except Exception as e:
+        # Captura erro de "ExecutableNotFound" comum no Windows/Docker Slim
+        if "ExecutableNotFound" in str(e):
+            st.warning(
+                "⚠️ Software Graphviz não encontrado no servidor. O diagrama não pode ser gerado."
             )
         else:
-            dot.node(
-                ponto,
-                label="",
-                xlabel=label_ext,
-                shape="circle",
-                style="filled",
-                fillcolor=fillcolor,
-                color=color,
-                penwidth=penwidth,
-                width="0.12",
-                height="0.12",
-                fixedsize="true",
-            )
-
-        if montante and montante.upper() != "NAN" and montante != "":
-            dist = row.get("METROS", 0)
-            lbl_e = f"{int(dist)}" if dist > 0 else ""
-            dot.edge(montante, ponto, label=lbl_e, fontsize="7", color="#424242")
-
-    return dot
+            st.error(f"Erro ao gerar diagrama: {str(e)}")
+        return None

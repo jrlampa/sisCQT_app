@@ -1,0 +1,13 @@
+dversion: '3.8'
+
+services:
+  siscqt_app:
+    build: .
+    ports:
+      - "8501:8501" # Interface do Usuário
+      - "8000:8000" # API de Cálculo
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data # Persistência do banco de dados
+    restart: always

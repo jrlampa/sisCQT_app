@@ -1,188 +1,140 @@
-# siscqt_engine.py
 import pandas as pd
 import numpy as np
 import math
+import re
 from collections import deque, defaultdict
 from typing import Tuple, Dict, List
+
 from backend.constantes import (
     UNIT_DIVISOR,
-    COL_MAPPING,
     TABELA_DEMANDA,
+    FP_GERAL,
+    FP_IP,
+    ENGINE_VERSION,
     CABOS_IMPEDANCIA,
+    COL_MAPPING,
 )
 
 
 class ElectricalEngine:
     @staticmethod
-    def get_template_dataframe():
-        return pd.DataFrame(
-            {
-                "PONTO": ["TRAFO"],
-                "MONTANTE": [""],
-                "METROS": [0.0],
-                "CABO": [""],
-                "MONO": [0],
-                "BIFÁSICO": [0],
-                "TRIFÁSICO": [0],
-                "TRI ESPECIAL": [0],
-                "CARGA_ESP_KVA": [0.0],
-                "TIPO_IP": ["Sem IP"],
-                "QTD_IP": [0],
-            }
-        )
+    def get_version():
+        return ENGINE_VERSION
 
     @staticmethod
-    def validar_preenchimento(df: pd.DataFrame, mapa_ips: Dict) -> List[str]:
-        """
-        [NOVA FUNÇÃO] Valida regras básicas de preenchimento antes do cálculo.
-        """
+    def validar_estritamente(df: pd.DataFrame, params: Dict) -> List[str]:
         erros = []
-        for idx, row in df.iterrows():
-            p = str(row.get("PONTO", "")).strip()
-            if p == "TRAFO":
-                continue
-
-            # Valida Ponto
-            if not p:
-                erros.append(f"Linha {idx+1}: Falta o nome do Ponto.")
-                continue
-
-            # Valida Montante
-            m = str(row.get("MONTANTE", "")).strip()
-            if not m:
-                erros.append(f"Ponto '{p}': Falta definir o Montante.")
-
+        trafos = df[df["PONTO"] == "TRAFO"]
+        if len(trafos) != 1:
+            erros.append("ERRO: A rede deve conter exatamente um nó 'TRAFO'.")
+        c_tipo = params.get("classe_tipo")
+        if c_tipo not in ["Automático", "Manual"]:
+            erros.append(f"ERRO: classe_tipo '{c_tipo}' inválido.")
+        if c_tipo == "Manual" and params.get("classe_manual") not in [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]:
+            erros.append(
+                f"ERRO: Classe manual '{params.get('classe_manual')}' inválida."
+            )
+        if UNIT_DIVISOR != 100.0:
+            erros.append("ERRO: UNIT_DIVISOR inconsistente para norma QTOS.")
         return erros
 
     @staticmethod
-    def limpar_linhas_vazias(df: pd.DataFrame) -> pd.DataFrame:
-        if df.empty:
-            return df
-
-        def tem_dados(row):
-            if str(row.get("PONTO", "")).strip():
-                return True
-            return False
-
-        return (
-            df[df.apply(tem_dados, axis=1) | (df["PONTO"] == "TRAFO")]
-            .copy()
-            .reset_index(drop=True)
+    def _normalizar_chave(texto: str) -> str:
+        if not isinstance(texto, str) or not texto.strip():
+            return ""
+        s = texto.lower().strip()
+        s = (
+            s.replace(",", ".")
+            .replace(" x ", "#")
+            .replace("x", "#")
+            .replace("+1#", "+")
         )
+        ruidos = [
+            "mm2",
+            "mm²",
+            "mm",
+            "al",
+            "cu",
+            "ca",
+            "multiplex",
+            "conc",
+            "cabo",
+            "f.p",
+            "1",
+        ]
+        for r in ruidos:
+            s = s.replace(r, "")
+        return re.sub(r"[^0-9+#.]", "", s)
 
     @staticmethod
-    def sanitizar(
-        df_input: pd.DataFrame,
-        valid_cabos: List[str] = None,
-        valid_ips: List[str] = None,
-        limites: Dict = None,
-    ) -> Tuple[pd.DataFrame, List[str]]:
-        df = df_input.copy()
-        erros = []
-
-        cols_default = {
-            "PONTO": "",
-            "MONTANTE": "",
-            "CABO": "",
-            "TIPO_IP": "Sem IP",
-            "METROS": 0.0,
-            "MONO": 0,
-            "BIFÁSICO": 0,
-            "TRIFÁSICO": 0,
-            "TRI ESPECIAL": 0,
-            "CARGA_ESP_KVA": 0.0,
-            "QTD_IP": 0,
-        }
-        for col, default_val in cols_default.items():
-            if col not in df.columns:
-                df[col] = default_val
-
-        cols_str = ["PONTO", "MONTANTE", "CABO", "TIPO_IP"]
-        for c in cols_str:
-            df[c] = df[c].fillna("").astype(str).str.strip()
-
-        cols_num = [
-            "METROS",
-            "MONO",
-            "BIFÁSICO",
-            "TRIFÁSICO",
-            "TRI ESPECIAL",
-            "CARGA_ESP_KVA",
-            "QTD_IP",
-        ]
-        for c in cols_num:
-            if df[c].dtype == object:
-                df[c] = df[c].astype(str).str.replace(",", ".", regex=False)
-            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
-            if (df[c] < 0).any():
-                erros.append(f"Valores negativos em {c}.")
-
-        trafo_mask = df["PONTO"] == "TRAFO"
-        if not trafo_mask.any():
-            return df, ["Falta o ponto 'TRAFO'."]
-        else:
-            # Força Trafo ser Raiz
-            df.loc[trafo_mask, ["MONTANTE", "METROS", "CABO"]] = ["", 0.0, ""]
-
-        return df, erros
+    def _buscar_cabo_flexivel(nome_cabo: str, catalogo: Dict) -> Tuple[float, str]:
+        if not nome_cabo:
+            return 0.0, ""
+        if nome_cabo in catalogo:
+            return catalogo[nome_cabo], nome_cabo
+        assinatura_input = ElectricalEngine._normalizar_chave(nome_cabo)
+        if assinatura_input:
+            for key_cat in catalogo.keys():
+                if ElectricalEngine._normalizar_chave(key_cat) == assinatura_input:
+                    return catalogo[key_cat], key_cat
+        return 0.0, ""
 
     @staticmethod
     def validar_topologia(df: pd.DataFrame) -> Tuple[bool, List[str]]:
-        erros = []
-        if df["PONTO"].duplicated().any():
-            dups = df[df["PONTO"].duplicated()]["PONTO"].unique().tolist()
-            return False, [f"Pontos duplicados: {dups}"]
-
         nodes = set(df["PONTO"])
+        if df["PONTO"].duplicated().any():
+            return False, ["ERRO: Pontos duplicados detectados."]
         adj = defaultdict(list)
-
         for _, r in df.iterrows():
-            p, m = r["PONTO"], r["MONTANTE"]
+            p, m = str(r["PONTO"]), str(r["MONTANTE"])
             if p == "TRAFO":
                 continue
-            if not m:
-                erros.append(f"Ponto '{p}' sem montante.")
-            elif m not in nodes:
-                erros.append(f"Ponto '{p}' aponta para montante inexistente '{m}'.")
-            else:
-                adj[m].append(p)
+            if m not in nodes:
+                return False, [
+                    f"ERRO: Ponto '{p}' aponta para montante inexistente '{m}'."
+                ]
+            adj[m].append(p)
+        visitados, pilha = set(), set()
 
-        if erros:
-            return False, erros
-
-        vis, stack = set(), set()
-
-        def has_cycle(u):
-            vis.add(u)
-            stack.add(u)
+        def tem_ciclo(u):
+            visitados.add(u)
+            pilha.add(u)
             for v in adj[u]:
-                if v not in vis:
-                    if has_cycle(v):
+                if v not in visitados:
+                    if tem_ciclo(v):
                         return True
-                elif v in stack:
+                elif v in pilha:
                     return True
-            stack.remove(u)
+            pilha.remove(u)
             return False
 
-        for n in nodes:
-            if n not in vis:
-                if has_cycle(n):
-                    return False, [f"Ciclo detectado na rede (loop em '{n}')."]
-
-        q = deque(["TRAFO"])
-        reached = {"TRAFO"}
-        while q:
-            u = q.popleft()
+        if any(tem_ciclo(n) for n in nodes if n not in visitados):
+            return False, ["ERRO: Ciclo (loop) detectado. A rede deve ser radial."]
+        fila, alcancaveis = deque(["TRAFO"]), {"TRAFO"}
+        while fila:
+            u = fila.popleft()
             for v in adj[u]:
-                if v not in reached:
-                    reached.add(v)
-                    q.append(v)
-
-        orphans = nodes - reached
-        if orphans:
-            return False, [f"Pontos isolados do Trafo: {list(orphans)}"]
-
+                if v not in alcancaveis:
+                    alcancaveis.add(v)
+                    fila.append(v)
+        isolados = nodes - alcancaveis
+        if isolados:
+            return False, [f"ERRO: Pontos isolados do Trafo: {list(isolados)[:3]}"]
         return True, []
+
+    @staticmethod
+    def get_fator_demanda(tc, cls, tabela_demanda=None):
+        tabela = tabela_demanda if tabela_demanda else TABELA_DEMANDA
+        idx = {"A": 2, "B": 3, "C": 4, "D": 5}.get(cls, 3)
+        for row in tabela:
+            if row[0] <= tc <= row[1]:
+                return row[idx]
+        return [1.5, 2.5, 4.0, 6.0][idx - 2]
 
     @staticmethod
     def calcular_ordem_topologica(df):
@@ -204,196 +156,172 @@ class ElectricalEngine:
         return topo
 
     @staticmethod
-    def get_fator_demanda(tc, cls):
-        idx = {"A": 0, "B": 1, "C": 2, "D": 3}.get(cls, 0)
-        for mn, mx, *v in TABELA_DEMANDA:
-            if mn <= tc <= mx:
-                return v[idx]
-        return [0.5, 0.8, 1.3, 2.0][idx]
+    def balancear_fases(df: pd.DataFrame, ordem: List[str], pmap: Dict):
+        fases = {"A": 0, "B": 0, "C": 0}
+        df["SUGESTAO_BALANCEAMENTO"] = "-"
+        for n in ordem:
+            i = pmap[n]
+            m, b = int(df.at[i, "MONO"]), int(df.at[i, "BIFÁSICO"])
+            sug = []
+            for _ in range(m):
+                f = min(fases, key=fases.get)
+                fases[f] += 1
+                sug.append(f"1M->{f}")
+            for _ in range(b):
+                p = min(
+                    [("A", "B"), ("B", "C"), ("C", "A")],
+                    key=lambda x: fases[x[0]] + fases[x[1]],
+                )
+                fases[p[0]] += 1
+                fases[p[1]] += 1
+                sug.append(f"1B->{p[0]}{p[1]}")
+            if sug:
+                df.at[i, "SUGESTAO_BALANCEAMENTO"] = ", ".join(sug)
 
     @staticmethod
-    def calcular_icc(df: pd.DataFrame, ordem: List[str], pmap: Dict, trafo_kva: float):
-        v_fase = 220.0 / math.sqrt(3)
-        z_base = (0.22**2 * 1000) / trafo_kva if trafo_kva > 0 else 1.0
-        z_trafo_ohm = 0.04 * z_base
-        imp = {"TRAFO": complex(0, z_trafo_ohm)}
+    def calcular_icc(df, ordem, pmap, trafo_kva):
+        v_fase = 127.0
+        z_base = (0.22**2 * 1000 / trafo_kva) if trafo_kva > 0 else 1.0
+        z_trafo = complex(0, 0.04 * z_base)
+        imp = {"TRAFO": z_trafo}
         for n in ordem:
-            if n == "TRAFO":
-                continue
             i = pmap[n]
-            pai = df.at[i, "MONTANTE"]
-            if pai not in imp:
+            if n == "TRAFO":
+                df.at[i, "ICC_KA"] = v_fase / abs(z_trafo) / 1000.0
                 continue
+            pai = df.at[i, "MONTANTE"]
             cabo = df.at[i, "CABO"]
             km = df.at[i, "METROS"] / 1000.0
-            dados_z = CABOS_IMPEDANCIA.get(cabo, {"r": 1.0, "x": 0.1})
-            z_trecho = complex(dados_z["r"] * km, dados_z["x"] * km)
-            imp[n] = imp[pai] + z_trecho
-            z_mod = abs(imp[n])
-            df.at[i, "ICC_KA"] = (v_fase / z_mod) / 1000.0 if z_mod > 0 else 0
-
-    @staticmethod
-    def balancear_fases(df: pd.DataFrame, ordem: List[str], pmap: Dict):
-        pass
+            z_cabo = CABOS_IMPEDANCIA.get(cabo, {"r": 99, "x": 99})
+            imp[n] = imp[pai] + complex(z_cabo["r"] * km, z_cabo["x"] * km)
+            mod = abs(imp[n])
+            df.at[i, "ICC_KA"] = (v_fase / mod / 1000.0) if mod > 0 else 0
 
     @staticmethod
     def calcular(
         df: pd.DataFrame, params: Dict, config_context: Dict
     ) -> Tuple[pd.DataFrame, Dict, List[str]]:
         coef_cabos = config_context.get("cabos", {})
-        mapa_ips = config_context.get("ips", {})
-        perfis = config_context.get("perfis", {})
-        nome_perfil = params.get("perfil", "Padrão (Urbano)")
-        limites = perfis.get(nome_perfil, {"cqt_max": 6.0, "sobrecarga_max": 100.0})
-
-        if params.get("trafo_kva", 0) <= 0:
-            return df, {}, ["Trafo deve ser > 0."]
-
-        cols_to_clean = list(COL_MAPPING.values()) + [
-            "QTD_CLI",
-            "POT_IP_KVA",
-            "TOTAL_LOCAL_KVA",
-            "CQT_TRECHO",
-            "CQT_ACUMULADA",
-            "ICC_KA",
-            "SUGESTAO_BALANCEAMENTO",
-            "CARGA_DIST_KVA",
-            "CARGA_PONTUAL_KVA",
-            "ACUMULADA_KVA",
+        if not coef_cabos:
+            return df, {}, ["ERRO: Catálogo de cabos vazio."]
+        cols_num = [
+            "METROS",
+            "MONO",
+            "BIFÁSICO",
+            "TRIFÁSICO",
+            "TRI ESPECIAL",
+            "CARGA_ESP_KVA",
+            "QTD_IP",
         ]
-        df = df.drop(
-            columns=[c for c in cols_to_clean if c in df.columns], errors="ignore"
-        )
-
-        df, err_sanit = ElectricalEngine.sanitizar(
-            df, list(coef_cabos.keys()), list(mapa_ips.keys()), limites
-        )
-        df = df.reset_index(drop=True)
-
-        if err_sanit:
-            return df, {}, err_sanit
-        ok, err_topo = ElectricalEngine.validar_topologia(df)
-        if not ok:
-            return df, {}, err_topo
-
-        new_cols = [
-            "QTD_CLI",
-            "POT_IP_KVA",
-            "TOTAL_LOCAL_KVA",
-            "CQT_TRECHO",
-            "CQT_ACUMULADA",
-            "ICC_KA",
-            "SUGESTAO_BALANCEAMENTO",
-            "CARGA_DIST_KVA",
-            "CARGA_PONTUAL_KVA",
-            "ACUMULADA_KVA",
-        ]
-        for c in new_cols:
-            df[c] = 0.0 if c != "SUGESTAO_BALANCEAMENTO" else ""
-
-        avisos_diagnostico = []
+        for c in cols_num:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
+            if (df[c] < 0).any():
+                return df, {}, [f"ERRO: Valores negativos em '{c}'."]
+        df.loc[df["PONTO"] == "TRAFO", ["METROS", "CABO"]] = [0, ""]
+        erros_pre = ElectricalEngine.validar_estritamente(df, params)
+        if erros_pre:
+            return df, {}, erros_pre
+        ok_topo, erros_topo = ElectricalEngine.validar_topologia(df)
+        if not ok_topo:
+            return df, {}, erros_topo
         ordem = ElectricalEngine.calcular_ordem_topologica(df)
         if len(ordem) != len(df):
-            return df, {}, ["Erro desconhecido na topologia."]
-
-        m = df["MONO"].sum()
-        b = df["BIFÁSICO"].sum()
-        t = df["TRIFÁSICO"].sum()
-        te = df["TRI ESPECIAL"].sum()
+            return df, {}, ["ERRO: Falha na integridade topológica."]
+        pmap = {p: i for i, p in enumerate(df["PONTO"])}
+        m, b, t, te = (
+            df["MONO"].sum(),
+            df["BIFÁSICO"].sum(),
+            df["TRIFÁSICO"].sum(),
+            df["TRI ESPECIAL"].sum(),
+        )
         tc = int(m + b + t + te)
-
         if params.get("classe_tipo") == "Automático":
             if tc == 0:
                 cls = "A"
-            elif (te > 0 and te / tc > 0.1) or te >= 3:
+            elif (te / tc > 0.1) or te >= 3:
                 cls = "D"
-            elif t > 0 or (tc > 0 and t / tc >= 0.2):
+            elif t / tc >= 0.2:
                 cls = "C"
-            elif (tc > 0 and (b + t) / tc >= 0.4) or b > m:
+            elif (b + t) / tc >= 0.4:
                 cls = "B"
             else:
                 cls = "A"
         else:
-            cls = params.get("classe_manual", "A")
-        fd = ElectricalEngine.get_fator_demanda(tc, cls)
+            cls = params.get("classe_manual", "B")
+        fd = ElectricalEngine.get_fator_demanda(tc, cls, config_context.get("demandas"))
 
-        df["QTD_CLI"] = (
-            df["MONO"] + df["BIFÁSICO"] + df["TRIFÁSICO"] + df["TRI ESPECIAL"]
+        # Correção 1: CARGA_DIST_KVA agora armazena carga INSTALADA (Sem FD)
+        df["CARGA_DIST_KVA"] = df["MONO"] + df["BIFÁSICO"] + df["TRIFÁSICO"]
+
+        pot_ip_kva = (
+            df["TIPO_IP"].map(config_context.get("ips", {})).fillna(0.0) / 1000.0
         )
-        df["CARGA_DIST_KVA"] = df["QTD_CLI"] * fd
-
-        fp = params.get("fp_ip", 0.92)
-        fp = 0.92 if fp <= 0 else fp
-        df["POT_IP_KVA"] = df["TIPO_IP"].map(mapa_ips).fillna(0.0) / 1000.0
-        df["CARGA_PONTUAL_KVA"] = df["CARGA_ESP_KVA"] + (
-            df["POT_IP_KVA"] * df["QTD_IP"]
+        df["CARGA_PONTUAL_KVA"] = (
+            df["CARGA_ESP_KVA"] + (pot_ip_kva * df["QTD_IP"]) + df["TRI ESPECIAL"]
         )
         df["TOTAL_LOCAL_KVA"] = df["CARGA_DIST_KVA"] + df["CARGA_PONTUAL_KVA"]
 
-        pmap = {p: i for i, p in enumerate(df["PONTO"])}
         accum = defaultdict(float)
         for n in reversed(ordem):
-            i = pmap[n]
-            accum[n] += df.at[i, "TOTAL_LOCAL_KVA"]
-            pai = df.at[i, "MONTANTE"]
+            idx = pmap[n]
+            accum[n] += df.at[idx, "TOTAL_LOCAL_KVA"]
+            pai = df.at[idx, "MONTANTE"]
             if pai:
                 accum[pai] += accum[n]
-            df.at[i, "ACUMULADA_KVA"] = accum[n]
+            df.at[idx, "ACUMULADA_KVA"] = accum[n]
 
-        cqt_acumulada_dict = {"TRAFO": 0.0}
+        avisos = []
+        cqt_acum = {"TRAFO": 0.0}
         for n in ordem:
+            idx = pmap[n]
             if n == "TRAFO":
+                df.at[idx, "CQT_TRECHO"] = 0.0
+                df.at[idx, "CQT_ACUMULADA"] = 0.0
                 continue
-            i = pmap[n]
-            pai = df.at[i, "MONTANTE"]
-
-            carga_jusante_pura = accum[n] - df.at[i, "TOTAL_LOCAL_KVA"]
-            carga_local_dist = df.at[i, "CARGA_DIST_KVA"]
-            carga_local_pontual = df.at[i, "CARGA_PONTUAL_KVA"]
-            momento = (carga_local_dist / 2) + carga_local_pontual + carga_jusante_pura
-
-            cabo = df.at[i, "CABO"]
-            coef = coef_cabos.get(cabo, 0.0)
-
-            # --- CORREÇÃO DO AVISO ---
-            if cabo and cabo not in coef_cabos and df.at[i, "METROS"] > 0:
-                avisos_diagnostico.append(
-                    f"ALERTA: Ponto '{n}' tem cabo desconhecido '{cabo}'."
-                )
-
-            km = df.at[i, "METROS"] / UNIT_DIVISOR
+            pai = df.at[idx, "MONTANTE"]
+            momento = (
+                (df.at[idx, "CARGA_DIST_KVA"] / 2)
+                + df.at[idx, "CARGA_PONTUAL_KVA"]
+                + (accum[n] - df.at[idx, "TOTAL_LOCAL_KVA"])
+            )
+            coef, cabo_real = ElectricalEngine._buscar_cabo_flexivel(
+                df.at[idx, "CABO"], coef_cabos
+            )
+            df.at[idx, "CABO"] = cabo_real if cabo_real else df.at[idx, "CABO"]
+            if coef == 0 and df.at[idx, "METROS"] > 0:
+                avisos.append(f"ALERTA: Ponto '{n}' com cabo desconhecido.")
+            km = df.at[idx, "METROS"] / UNIT_DIVISOR
             q_trecho = momento * km * coef
-            tot_acumulado = cqt_acumulada_dict.get(pai, 0.0) + q_trecho
-            cqt_acumulada_dict[n] = tot_acumulado
-            df.at[i, "CQT_TRECHO"] = q_trecho
-            df.at[i, "CQT_ACUMULADA"] = tot_acumulado
-
-            if tot_acumulado > limites["cqt_max"]:
-                avisos_diagnostico.append(
-                    f"CRÍTICO: Ponto '{n}' QT {tot_acumulado:.2f}% > {limites['cqt_max']}%"
+            cqt_acum[n] = cqt_acum[pai] + q_trecho
+            df.at[idx, "CQT_TRECHO"], df.at[idx, "CQT_ACUMULADA"] = (
+                q_trecho,
+                cqt_acum[n],
+            )
+            limites = config_context.get("perfis", {}).get(
+                params.get("perfil"), {"cqt_max": 6.0}
+            )
+            if cqt_acum[n] > limites["cqt_max"]:
+                avisos.append(
+                    f"ALERTA CRÍTICO: Ponto '{n}' QT {cqt_acum[n]:.2f}% excedida."
                 )
 
         ElectricalEngine.calcular_icc(df, ordem, pmap, params.get("trafo_kva", 75))
+        ElectricalEngine.balancear_fases(df, ordem, pmap)
         df.rename(columns=COL_MAPPING, inplace=True)
 
-        trafo_idx = pmap.get("TRAFO")
-        dem = 0.0
-        if trafo_idx is not None and "CARGA_ACUMULADA_G" in df.columns:
-            dem = df.at[trafo_idx, "CARGA_ACUMULADA_G"]
-
-        ocupacao = (dem / float(params.get("trafo_kva", 75))) * 100
-        if ocupacao > limites["sobrecarga_max"]:
-            avisos_diagnostico.append(
-                f"CRÍTICO: Trafo {ocupacao:.1f}% > {limites['sobrecarga_max']}%"
-            )
+        # Correção 2: Cálculo de Demanda no Trafo separado (FD global aplicado uma única vez)
+        total_distribuida_rede = df["CARGA_DISTRIBUIDA"].sum()
+        total_pontual_rede = df["CARGA_PONTUAL_LOCAL"].sum()
+        demanda_trafo = (total_distribuida_rede * fd) + total_pontual_rede
 
         kpis = {
             "classe": cls,
             "fator": fd,
-            "demanda": dem,
-            "max_cqt": df["CQT_ACUMULADA"].max() if "CQT_ACUMULADA" in df else 0.0,
-            "clientes": tc,
-            "ocupacao": ocupacao,
-            "limites_usados": limites,
+            "demanda": demanda_trafo,
+            "ocupacao": (demanda_trafo / params.get("trafo_kva", 75)) * 100,
+            "max_cqt": df["CQT_ACUMULADA"].max(),
+            "engine_version": ENGINE_VERSION,
+            "unit_divisor": UNIT_DIVISOR,
+            "snapshot_params": params,
         }
-        return df, kpis, avisos_diagnostico
+        return df, kpis, avisos

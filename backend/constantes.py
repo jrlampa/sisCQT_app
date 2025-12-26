@@ -1,7 +1,9 @@
 # siscqt_constantes.py
 
+# --- 1. CONFIGURAÇÕES DE SISTEMA ---
 DB_FILE = "siscqt_v24.db"
-UNIT_DIVISOR = 100.0
+UNIT_DIVISOR = 100.0  # Fixo para hm (hectômetros) conforme norma
+ENGINE_VERSION = "2.4.0-Normativa"
 
 DEFAULT_PERFIS = [
     ("Massivos", 6.0, 120.0, 250.0, 2000),
@@ -9,36 +11,41 @@ DEFAULT_PERFIS = [
     ("Temporário", 6.0, 130.0, 250.0, 2000),
 ]
 
-# FORMATO: "Nome": [Coef_Queda, R_Ohm_km, X_Ohm_km]
-# Dados aproximados para condutores de alumínio (CA/CAL) e cobre típicos
+# --- 2. CONSTANTES NORMATIVAS (IMUTÁVEIS) ---
+# FP fixos para evitar divergências entre blocos
+FP_GERAL = 0.92
+FP_IP = 1.0
+
+# Tabela de Demanda Média (CNS-OMBR-MAT-19-0285)
+TABELA_DEMANDA = [
+    # (De, Até, Cls A, Cls B, Cls C, Cls D)
+    (1, 5, 1.50, 2.50, 4.00, 6.00),
+    (6, 10, 1.20, 2.00, 3.20, 5.00),
+    (11, 20, 1.00, 1.60, 2.50, 4.00),
+    (21, 50, 0.80, 1.20, 2.00, 3.00),
+    (51, 9999, 0.50, 0.80, 1.30, 2.00),
+]
+
+# --- 3. MODELO DE CONDUTORES ---
+# Fonte única de verdade para cabos. Unidade Coef: % / (kVA · hm)
 DEFAULT_CABOS_DATA = {
     "2#16(25)mm² Al": [0.7779, 1.91, 0.10],
     "3x35+54.6mm² Al": [0.2416, 0.87, 0.09],
     "3x50+54.6mm² Al": [0.1784, 0.64, 0.09],
-    "3x50+50mm² Al": [0.1784, 0.64, 0.09],
     "3x70+54.6mm² Al": [0.1248, 0.44, 0.08],
     "3x95+54.6mm² Al": [0.0891, 0.32, 0.08],
     "3x150+70mm² Al": [0.0573, 0.21, 0.08],
-    "3# 4 - Al - F.P 1": [0.3159, 1.36, 0.11],
-    "3# 2 - Al - F.P 1": [0.1980, 0.85, 0.10],
-    "3# 1/0 - Al - F.P 1": [0.1248, 0.54, 0.10],
-    "3# 2/0 - Al - F.P 1": [0.0990, 0.43, 0.09],
-    "3# 4/0 - Al - F.P 1": [0.0624, 0.27, 0.09],
-    "MULTIPLEX 2#16 (16) CU": [0.2820, 1.15, 0.10],
-    "1#6 (6) CU": [1.6800, 3.08, 0.12],
-    "CONC 2#10 (10) CU": [0.7400, 1.83, 0.11],
 }
 
-# Compatibilidade: Dicionário simples só com coeficientes (usado em partes legado)
+# Derivações automáticas para garantir sincronia total
 DEFAULT_CABOS = {k: v[0] for k, v in DEFAULT_CABOS_DATA.items()}
-
-# Dicionário Avançado de Impedância para o Engine (ICC)
 CABOS_IMPEDANCIA = {k: {"r": v[1], "x": v[2]} for k, v in DEFAULT_CABOS_DATA.items()}
 
+# --- 4. DEFAULTS OPERACIONAIS E UX ---
 DEFAULT_IPS = {
     "Sem IP": 0.0,
     "IP 70W": 70.0,
-    "IP 80W": 80.0,
+    "IP 100W": 100.0,
     "IP 150W": 150.0,
     "IP 250W": 250.0,
     "IP 400W": 400.0,
@@ -47,11 +54,11 @@ DEFAULT_IPS = {
 DEFAULT_TRAFOS_LISTA = [15, 30, 45, 75, 112.5, 150, 225, 300]
 
 DEFAULT_PARAMS = {
-    "trafo_kva": 150,
+    "trafo_kva": 75.0,
+    "fp_ip": FP_IP,
     "classe_tipo": "Automático",
-    "classe_manual": "A",
-    "fp_ip": 0.92,
-    "perfil": "Padrão (Urbano)",
+    "classe_manual": "B",
+    "perfil": "Massivos",
 }
 
 COL_MAPPING = {
@@ -105,35 +112,4 @@ QT_acumulada = QT_trecho + QT_acumulada_montante
 4. CONTROLE DE CONSISTENCIA
 O sistema verifica automaticamente limites de QT, sobrecarga e topologia.
 """
-# ==============================================================================
-# 3. TABELA DMDI (Demanda Média por Cliente em kVA)
-# ==============================================================================
-# Esta é a chave para bater com a planilha.
-# Valores baseados na curva típica da Enel (Norma CNS-OMBR-MAT-19-0285).
-TABELA_DEMANDA = [
-    # (De, Até,   Cls A, Cls B, Cls C, Cls D)
-    (1, 5, 1.50, 2.50, 4.00, 6.00),
-    (6, 10, 1.20, 2.00, 3.20, 5.00),
-    (11, 20, 1.00, 1.60, 2.50, 4.00),
-    (21, 50, 0.80, 1.20, 2.00, 3.00),
-    (51, 9999, 0.50, 0.80, 1.30, 2.00),
-]
-
-DEFAULT_IPS = {
-    "Sem IP": 0.0,
-    "IP 70W": 70.0,
-    "IP 80W": 80.0,
-    "IP 100W": 100.0,
-    "IP 150W": 150.0,
-    "IP 250W": 250.0,
-    "IP 400W": 400.0,
-}
-DEFAULT_TRAFOS_LISTA = [15, 30, 45, 75, 112.5, 150, 225, 300]
-
-DEFAULT_PARAMS = {
-    "trafo_kva": 75.0,
-    "fp_ip": 1.0,
-    "classe_tipo": "Manual",
-    "classe_manual": "B",
-    "perfil": "Massivos",
-}
+MEMORIAL_HTML = MEMORIAL_TEXTO.replace("\n", "<br>")
