@@ -4,6 +4,9 @@ import copy
 from typing import List, Dict, Tuple
 from siscqt_engine import ElectricalEngine
 
+# IMPORTAÇÃO DA NORMALIZAÇÃO CENTRALIZADA
+from normalizacao_dados import sanitizar
+
 
 class DiagnosticoEngenharia:
     """
@@ -273,215 +276,219 @@ class SimuladorReadequacao:
 # --- IMPORTADOR DE PLANILHA CONCESSIONÁRIA FUNÇÃO AUXILIAR ---
 def importar_planilha_concessionaria(
     arquivo_excel,
-) -> Tuple[pd.DataFrame, float, Dict, str]:
+) -> Tuple[pd.DataFrame, float, Dict, str, List[str]]:
     """
-    Importador Blindado:
-    Retorna: (DataFrame, Trafo_kVA, Config_Cabos, Classe_Detectada)
+    Importador Blindado com Normalização Centralizada.
+    Lê planilhas padrão da concessionária, extrai topologia e cargas,
+    e aplica sanitização rigorosa.
+
+    Retorna: (DataFrame_Normalizado, Trafo_kVA, Config_Cabos, Classe, Lista_Erros)
     """
     SHEET_BASE = "BASE DE DADOS"
     SHEET_CQT = "CQT ATUAL"
     SHEET_ATUAL = "ATUAL"
 
-    def safe_float(val):
-        try:
-            if pd.isna(val):
-                return 0.0
-            s = str(val).replace(",", ".").strip()
-            return float(s) if s else 0.0
-        except:
-            return 0.0
+    erros_importacao = []
 
-    def normalize_id(val):
-        if pd.isna(val):
-            return ""
-        s = str(val).strip().upper()
-        return s[:-2] if s.endswith(".0") else s
-
-    # --- 1. CABOS ---
+    # --- 1. CABOS (Extração de Metadados) ---
     config_cabos = {}
     try:
         df_base = pd.read_excel(arquivo_excel, sheet_name=SHEET_BASE, header=1)
+        # Normalização leve apenas para extrair configs (não afeta o DF principal ainda)
         for _, row in df_base.iterrows():
             try:
                 nome = str(row.iloc[0]).strip()
-                coef = safe_float(row.iloc[1])
-                if nome and nome != "nan" and coef > 0:
+                # Conversão segura local apenas para config
+                coef_str = str(row.iloc[1]).replace(",", ".")
+                coef = float(coef_str) if coef_str and coef_str != "nan" else 0.0
+
+                if nome and nome.lower() != "nan" and coef > 0:
                     config_cabos[nome] = coef
             except:
                 continue
-    except:
-        pass
+    except Exception as e:
+        erros_importacao.append(
+            f"Aviso: Não foi possível ler a aba '{SHEET_BASE}'. Usando cabos padrão. ({str(e)})"
+        )
 
-    # --- FIM FUNÇÃO AUXILIAR ---
-
-    # --- 2. TOPOLOGIA ---
-    # Tenta ler trafo kVA antes do header real
+    # --- 2. TOPOLOGIA (Extração Estrutural) ---
     trafo_kva = 45.0
-    try:
-        df_raw_cqt = pd.read_excel(arquivo_excel, sheet_name=SHEET_CQT, header=None)
-        trafo_kva = safe_float(df_raw_cqt.iloc[2, 5])
-    except:
-        pass
 
-    # Localiza cabeçalho
+    # Tentativa de ler KVA do cabeçalho
+    try:
+        df_head = pd.read_excel(
+            arquivo_excel, sheet_name=SHEET_CQT, header=None, nrows=10
+        )
+        # Procura célula com valor numérico compatível com trafo na região superior
+        val = str(df_head.iloc[2, 5]).replace(",", ".")
+        trafo_kva = float(val)
+    except:
+        pass  # Mantém default 45.0
+
+    # Localização dinâmica do cabeçalho
     header_idx = 7
     try:
-        df_raw_cqt = pd.read_excel(arquivo_excel, sheet_name=SHEET_CQT, header=None)
-        idx_found = df_raw_cqt[
-            df_raw_cqt[0].astype(str).str.upper().str.strip() == "TRECHO"
-        ].index[0]
-        header_idx = idx_found
-    except:
-        pass
-
-    df_cqt = pd.read_excel(arquivo_excel, sheet_name=SHEET_CQT, header=header_idx)
-    # Colunas esperadas: A(0)=TRECHO, B(1)=MONTANTE, C(2)=COMPRIMENTO, I(8)=CABO, L(11)=EXPECTED
-    df_topology = df_cqt.iloc[:, [0, 1, 2, 8, 11]].copy()
-    df_topology.columns = ["PONTO", "MONTANTE", "METROS", "CABO", "EXPECTED_CQT"]
-
-    df_topology["PONTO"] = df_topology["PONTO"].apply(normalize_id)
-    df_topology["MONTANTE"] = (
-        df_topology["MONTANTE"]
-        .apply(normalize_id)
-        .replace({"NAN": "", "NONE": "", "0": ""})
-    )
-
-    def ajustar_metros(val):
-        v = safe_float(val)
-        return v * 100.0 if (v < 10.0 and v > 0) else v
-
-    df_topology["METROS"] = df_topology["METROS"].apply(ajustar_metros)
-    df_topology["CABO"] = df_topology["CABO"].astype(str).str.strip()
-    df_topology["EXPECTED_CQT"] = df_topology["EXPECTED_CQT"].apply(safe_float)
-
-    df_topology = df_topology[df_topology["PONTO"] != ""]
-    # Garante que TRAFO é mantido ou criado
-    mask_real = (df_topology["PONTO"] == "TRAFO") | (df_topology["METROS"] > 0.1)
-    df_topology = df_topology[mask_real]
-
-    if not df_topology[df_topology["PONTO"] == "TRAFO"].empty:
-        # Se já existe, limpa montante
-        df_topology.loc[
-            df_topology["PONTO"] == "TRAFO", ["MONTANTE", "METROS", "CABO"]
-        ] = ["", 0.0, ""]
-    else:
-        # Cria se não existe
-        row_trafo = pd.DataFrame(
-            [
-                {
-                    "PONTO": "TRAFO",
-                    "MONTANTE": "",
-                    "METROS": 0.0,
-                    "CABO": "",
-                    "EXPECTED_CQT": 0.0,
-                }
-            ]
+        df_raw_scan = pd.read_excel(
+            arquivo_excel, sheet_name=SHEET_CQT, header=None, nrows=20
         )
-        df_topology = pd.concat([row_trafo, df_topology], ignore_index=True)
-
-    # Corrige primeiro ponto pós-trafo se estiver orfão
-    if len(df_topology) > 1:
-        # Assume que a segunda linha (index 1, pois Trafo é 0 ou foi inserido) conecta no Trafo se estiver vazia
-        # Lógica simplificada: pontos sem pai que não são trafo viram filhos do trafo
-        for idx in df_topology.index:
-            p = df_topology.at[idx, "PONTO"]
-            m = df_topology.at[idx, "MONTANTE"]
-            if p != "TRAFO" and m == "":
-                df_topology.at[idx, "MONTANTE"] = "TRAFO"
-
-    # --- 3. CARGAS E CLASSE ---
-    df_raw_atual = pd.read_excel(arquivo_excel, sheet_name=SHEET_ATUAL, header=None)
-
-    classe_encontrada = "A"
-    try:
-        # Procura "CLASSE X" nas primeiras 10 linhas/colunas
-        subset = df_raw_atual.iloc[:10, :10].astype(str).values.flatten()
-        for cell in subset:
-            cell_u = cell.upper()
-            if "CLASSE" in cell_u:
-                for letra in ["A", "B", "C", "D", "E"]:
-                    if (
-                        f'"{letra}"' in cell_u
-                        or f"'{letra}'" in cell_u
-                        or f" {letra} " in cell_u
-                        or cell_u.endswith(f" {letra}")
-                    ):
-                        classe_encontrada = letra
-                        break
-    except:
-        pass
-
-    header_atual_idx = 0
-    try:
-        for r in range(15):
-            vals = df_raw_atual.iloc[r].astype(str).values
-            if "TRECHO" in vals or "PONTO" in vals:
-                header_atual_idx = r
+        # Procura linha que contenha "TRECHO"
+        for idx, row in df_raw_scan.iterrows():
+            if "TRECHO" in [str(v).upper().strip() for v in row.values]:
+                header_idx = idx
                 break
     except:
         pass
 
-    df_atual = pd.read_excel(
-        arquivo_excel, sheet_name=SHEET_ATUAL, header=header_atual_idx
-    )
     try:
-        # Colunas: J(9)=PONTO, L(11)=MONO, M(12)=BI, N(13)=TRI, O(14)=TRI_ESP
+        df_cqt = pd.read_excel(arquivo_excel, sheet_name=SHEET_CQT, header=header_idx)
+        # Mapeamento de colunas por índice (Layout Padrão Concessionária)
+        # A(0)=PONTO, B(1)=MONTANTE, C(2)=METROS, I(8)=CABO
+        df_topology = df_cqt.iloc[:, [0, 1, 2, 8]].copy()
+        df_topology.columns = ["PONTO", "MONTANTE", "METROS", "CABO"]
+
+        # Ajuste específico de unidade (m -> hm) antes da sanitização
+        # A sanitização trata tipos, mas não regras de negócio como conversão de unidade específica desta planilha
+        def _ajustar_unidade_metros(val):
+            try:
+                s = str(val).replace(",", ".")
+                v = float(s)
+                # Se vier em hectômetros (ex: 0.4) converte para metros (40.0)
+                # Heurística: Trechos < 10m costumam ser HM nesta planilha
+                return v * 100.0 if (v < 10.0 and v > 0) else v
+            except:
+                return 0.0
+
+        df_topology["METROS"] = df_topology["METROS"].apply(_ajustar_unidade_metros)
+
+    except Exception as e:
+        return (
+            pd.DataFrame(),
+            trafo_kva,
+            config_cabos,
+            "A",
+            [f"Erro crítico ao ler topologia: {str(e)}"],
+        )
+
+    # --- 3. CARGAS E CLASSE (Extração de Demanda) ---
+    try:
+        # Leitura para buscar Classe
+        df_raw_atual = pd.read_excel(
+            arquivo_excel, sheet_name=SHEET_ATUAL, header=None, nrows=15
+        )
+        classe_encontrada = "A"
+
+        # Varredura por string de classe
+        texto_dump = df_raw_atual.to_string().upper()
+        for cls in ["A", "B", "C", "D", "E"]:
+            if f"CLASSE {cls}" in texto_dump or f'CLASSE "{cls}"' in texto_dump:
+                classe_encontrada = cls
+                break
+
+        # Localiza header da tabela de cargas
+        header_atual_idx = 0
+        for r in range(len(df_raw_atual)):
+            vals = [str(v).upper() for v in df_raw_atual.iloc[r].values]
+            if "TRECHO" in vals or "PONTO" in vals:
+                header_atual_idx = r
+                break
+
+        df_atual = pd.read_excel(
+            arquivo_excel, sheet_name=SHEET_ATUAL, header=header_atual_idx
+        )
+
+        # Mapeamento de colunas de carga (Índices fixos do modelo)
+        # J(9)=PONTO, L(11)=MONO, M(12)=BI, N(13)=TRI, O(14)=TRI_ESP
         # IPs: S(18)..W(22)
-        data_loads = df_atual.iloc[:, [9, 11, 12, 13, 14]].copy()
-        data_loads.columns = ["PONTO", "MONO", "BI", "TRI", "TRI_ESP"]
-        data_loads["IP70"] = df_atual.iloc[:, 18]
-        data_loads["IP80"] = df_atual.iloc[:, 19]
-        data_loads["IP150"] = df_atual.iloc[:, 20]
-        data_loads["IP250"] = df_atual.iloc[:, 21]
-        data_loads["IP400"] = df_atual.iloc[:, 22]
-    except:
-        return df_topology, trafo_kva, config_cabos, classe_encontrada
+        cols_indices = [9, 11, 12, 13, 14, 18, 19, 20, 21, 22]
+        data_loads = df_atual.iloc[:, cols_indices].copy()
+        data_loads.columns = [
+            "PONTO",
+            "MONO",
+            "BIFÁSICO",
+            "TRIFÁSICO",
+            "TRI ESPECIAL",
+            "IP70",
+            "IP80",
+            "IP150",
+            "IP250",
+            "IP400",
+        ]
 
-    data_loads["PONTO"] = data_loads["PONTO"].apply(normalize_id)
-    data_loads = data_loads[data_loads["PONTO"] != ""]
+        # Cálculo de Carga Especial (IPs)
+        pot_ips = {
+            "IP70": 0.07,
+            "IP80": 0.08,
+            "IP150": 0.15,
+            "IP250": 0.25,
+            "IP400": 0.40,
+        }
 
-    cols_num = [
-        "MONO",
-        "BI",
-        "TRI",
-        "TRI_ESP",
-        "IP70",
-        "IP80",
-        "IP150",
-        "IP250",
-        "IP400",
-    ]
-    for c in cols_num:
-        data_loads[c] = data_loads[c].apply(safe_float)
+        # Função auxiliar temporária para cálculo de IP (antes da sanitização final)
+        def _calc_ip(row):
+            t = 0.0
+            qtd = 0
+            for k, v in pot_ips.items():
+                try:
+                    val = float(str(row.get(k, 0)).replace(",", "."))
+                    if val > 0:
+                        t += val * v
+                        qtd += int(val)
+                except:
+                    pass
+            return pd.Series([t, qtd])
 
-    data_loads["SOMA"] = data_loads[cols_num].sum(axis=1)
-    data_loads = data_loads[data_loads["SOMA"] > 0]
+        data_loads[["CARGA_ESP_KVA", "QTD_IP"]] = data_loads.apply(_calc_ip, axis=1)
 
-    pontos_validos = set(df_topology["PONTO"].unique())
-    data_loads = data_loads[data_loads["PONTO"].isin(pontos_validos)]
+        # Limpeza pré-merge: Remove cargas sem Ponto definido
+        data_loads = data_loads[data_loads["PONTO"].notna()]
+        # Normaliza PONTO para string upper para garantir o merge
+        data_loads["PONTO"] = (
+            data_loads["PONTO"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .str.replace(r"\.0$", "", regex=True)
+        )
+        df_topology["PONTO"] = (
+            df_topology["PONTO"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .str.replace(r"\.0$", "", regex=True)
+        )
 
-    pot_ips = {"IP70": 0.07, "IP80": 0.08, "IP150": 0.15, "IP250": 0.25, "IP400": 0.40}
+        # Merge (Left Join na Topologia)
+        df_merged = pd.merge(
+            df_topology,
+            data_loads[
+                [
+                    "PONTO",
+                    "MONO",
+                    "BIFÁSICO",
+                    "TRIFÁSICO",
+                    "TRI ESPECIAL",
+                    "CARGA_ESP_KVA",
+                    "QTD_IP",
+                ]
+            ],
+            on="PONTO",
+            how="left",
+        )
 
-    def calc_ip_kva(row):
-        t = 0.0
-        for k, v in pot_ips.items():
-            t += row.get(k, 0) * v
-        return t
+        # Preenche tipo de IP genérico se houver quantidade
+        df_merged["TIPO_IP"] = "Sem IP"
+        df_merged.loc[df_merged["QTD_IP"] > 0, "TIPO_IP"] = "IP Misto"
 
-    data_loads["CARGA_ESP_KVA"] = data_loads.apply(calc_ip_kva, axis=1)
+    except Exception as e:
+        erros_importacao.append(
+            f"Erro ao ler cargas: {str(e)}. Usando apenas topologia."
+        )
+        df_merged = df_topology.copy()
 
-    # 4. MERGE
-    df_final = pd.merge(df_topology, data_loads, on="PONTO", how="left")
-    cols_fill = ["MONO", "BI", "TRI", "TRI_ESP", "CARGA_ESP_KVA"]
-    df_final[cols_fill] = df_final[cols_fill].fillna(0)
+    # --- 4. CENTRALIZAÇÃO DA NORMALIZAÇÃO (BLINDAGEM FINAL) ---
+    # Aqui ocorre a mágica: Tipagem, Preenchimento de Nulos, Validação de TRAFO, Remoção de Lixo
+    df_norm, erros_sanitizacao = sanitizar(df_merged)
 
-    df_final = df_final.rename(
-        columns={"TRI_ESP": "TRI ESPECIAL", "BI": "BIFÁSICO", "TRI": "TRIFÁSICO"}
-    )
-    df_final["TIPO_IP"] = "Sem IP"
-    df_final["QTD_IP"] = 0
+    erros_finais = erros_importacao + erros_sanitizacao
 
-    # 5. DEDUPLICAÇÃO FINAL (Segurança contra merges duplicados)
-    df_final = df_final.loc[:, ~df_final.columns.duplicated()]
-
-    return df_final, trafo_kva, config_cabos, classe_encontrada
+    return df_norm, trafo_kva, config_cabos, classe_encontrada, erros_finais

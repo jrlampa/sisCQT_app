@@ -1,7 +1,8 @@
 # siscqt_constantes.py
 
-DB_FILE = "siscqt_v24.db"
-UNIT_DIVISOR = 100.0
+DB_FILE = "siscqt_v24.db"  # Nome do arquivo de banco de dados SQLite
+
+UNIT_DIVISOR = 100.0  # Divisor para conversão de metros para hectômetros
 
 DEFAULT_PERFIS = [
     ("Massivos", 6.0, 120.0, 250.0, 2000),
@@ -34,33 +35,20 @@ DEFAULT_CABOS = {k: v[0] for k, v in DEFAULT_CABOS_DATA.items()}
 
 # Dicionário Avançado de Impedância para o Engine (ICC)
 CABOS_IMPEDANCIA = {k: {"r": v[1], "x": v[2]} for k, v in DEFAULT_CABOS_DATA.items()}
-
-DEFAULT_IPS = {
-    "Sem IP": 0.0,
-    "IP 70W": 70.0,
-    "IP 80W": 80.0,
-    "IP 150W": 150.0,
-    "IP 250W": 250.0,
-    "IP 400W": 400.0,
-}
+# ==============================================================================
+# 2. PARÂMETROS PADRÃO
+# ==============================================================================
 
 DEFAULT_TRAFOS_LISTA = [15, 30, 45, 75, 112.5, 150, 225, 300]
 
-DEFAULT_PARAMS = {
-    "trafo_kva": 150,
-    "classe_tipo": "Automático",
-    "classe_manual": "A",
-    "fp_ip": 0.92,
-    "perfil": "Padrão (Urbano)",
-}
-
+# Mapeamento de nomes de colunas para compatibilidade
 COL_MAPPING = {
     "CARGA_DIST_KVA": "CARGA_DISTRIBUIDA",
     "CARGA_PONTUAL_KVA": "CARGA_PONTUAL_LOCAL",
     "TOTAL_LOCAL_KVA": "TOTAL_TRECHO_LOCAL",
     "ACUMULADA_KVA": "CARGA_ACUMULADA_G",
 }
-
+# Ordem padrão das colunas para exibição
 DEFAULT_COL_ORDER = [
     "PONTO",
     "MONTANTE",
@@ -105,8 +93,9 @@ QT_acumulada = QT_trecho + QT_acumulada_montante
 4. CONTROLE DE CONSISTENCIA
 O sistema verifica automaticamente limites de QT, sobrecarga e topologia.
 """
+
 # ==============================================================================
-# 3. TABELA DMDI (Demanda Média por Cliente em kVA)
+# TABELA DMDI (Demanda Média por Cliente em kVA)
 # ==============================================================================
 # Esta é a chave para bater com a planilha.
 # Valores baseados na curva típica da Enel (Norma CNS-OMBR-MAT-19-0285).
@@ -116,7 +105,7 @@ TABELA_DEMANDA = [
     (6, 10, 1.20, 2.00, 3.20, 5.00),
     (11, 20, 1.00, 1.60, 2.50, 4.00),
     (21, 50, 0.80, 1.20, 2.00, 3.00),
-    (51, 9999, 0.50, 0.80, 1.30, 2.00),
+    (31, 9999, 0.50, 0.80, 1.30, 2.00),
 ]
 
 DEFAULT_IPS = {
