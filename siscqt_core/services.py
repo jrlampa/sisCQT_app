@@ -468,8 +468,10 @@ class ElectricalEngine:
             )
 
             cabo = df.at[i, "CABO"]
-            coef = coef_cabos.get(cabo, 0.0)
-            if cabo and cabo not in coef_cabos and df.at[i, "METROS"] > 0:
+            coef_data = coef_cabos.get(cabo, {})
+            coef = coef_data.get('coeficiente', 0.0)
+
+            if cabo and not coef_data and df.at[i, "METROS"] > 0:
                 avisos_diagnostico.append(
                     f"ALERTA: Ponto '{n}' tem cabo desconhecido '{cabo}'."
                 )
@@ -490,19 +492,18 @@ class ElectricalEngine:
         df.rename(columns=COL_MAPPING, inplace=True)
 
         trafo_idx = pmap.get("TRAFO")
-        dem = (
-            df.at[trafo_idx, "CARGA_ACUMULADA_G"]
-            if trafo_idx is not None and "CARGA_ACUMULADA_G" in df.columns
-            else 0.0
-        )
+        dem = 0.0
+        if trafo_idx is not None and "CARGA_ACUMULADA_G" in df.columns:
+            dem = df.at[trafo_idx, "CARGA_ACUMULADA_G"]
+        
         ocupacao = (dem / float(params.get("trafo_kva", 75))) * 100
         if ocupacao > limites["sobrecarga_max"]:
             avisos_diagnostico.append(
                 f"CRÍTICO: Trafo {ocupacao:.1f}% > {limites['sobrecarga_max']}%"
             )
-
+        
         dados_baricentro = ElectricalEngine.sugerir_centro_carga(df)
-
+        
         kpis = {
             "classe": cls,
             "fator": fd,
@@ -514,7 +515,6 @@ class ElectricalEngine:
             "baricentro": dados_baricentro,
         }
         return df, kpis, avisos_diagnostico
-
 
 class DiagnosticoEngenharia:
     """

@@ -19,5 +19,5 @@ from django.urls import path, include # Import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('siscqt/', include('siscqt_core.urls')), # Include our app's URLs
+    path('api/', include('siscqt_core.urls')), # Include our app's URLs
 ]

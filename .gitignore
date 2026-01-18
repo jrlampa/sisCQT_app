@@ -12,3 +12,17 @@ venv/
 /frontend/node_modules/
 /frontend/.vite/
 /frontend/dist/
+legado/app.py
+legado/backend_api.py
+legado/logo_sisCQT.png
+legado/logoim3.png
+legado/readme.md
+legado/siscqt_api_client.py
+legado/siscqt_constantes.py
+legado/siscqt_db.py
+legado/siscqt_engine.py
+legado/siscqt_gui_old.py
+legado/siscqt_gui.py
+legado/siscqt_ui_components.py
+legado/siscqt_utils.py
+legado/siscqt_visual.py
