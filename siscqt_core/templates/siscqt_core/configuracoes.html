@@ -1,0 +1,22 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Configurações do Sistema{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Configurações do Sistema{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Configurações do Sistema</h1>
+    <p class="lead mb-4">Gerencie as tabelas de configuração do SisCQT.</p>
+
+    <div class="list-group">
+        <a href="{% url 'siscqt_core:listar_cabos' %}" class="list-group-item list-group-item-action">Gerenciar Cabos</a>
+        <a href="{% url 'siscqt_core:listar_ips' %}" class="list-group-item list-group-item-action">Gerenciar Pontos de Iluminação (IPs)</a>
+        <a href="{% url 'siscqt_core:listar_trafos' %}" class="list-group-item list-group-item-action">Gerenciar Trafos</a>
+        <a href="{% url 'siscqt_core:listar_perfis' %}" class="list-group-item list-group-item-action">Gerenciar Perfis</a>
+    </div>
+
+    <p class="mt-4"><a href="{% url 'siscqt_core:listar_projetos' %}" class="btn btn-secondary">Voltar para Projetos</a></p>
+{% endblock %}

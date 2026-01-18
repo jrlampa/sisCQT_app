@@ -1,0 +1,19 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Confirmar Exclusão de Trafo{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Confirmar Exclusão de Trafo{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Excluir Trafo: {{ trafo.kva }} kVA</h1>
+    <p class="lead">Você tem certeza que deseja excluir o trafo de <strong>{{ trafo.kva }} kVA</strong>?</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger me-2">Sim, Excluir</button>
+        <a href="{% url 'siscqt_core:listar_trafos' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+{% endblock %}

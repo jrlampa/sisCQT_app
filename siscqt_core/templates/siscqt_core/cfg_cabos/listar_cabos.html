@@ -1,0 +1,50 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar Cabos{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar Cabos{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Gerenciar Cabos</h1>
+    <p class="lead mb-4">Lista de todos os cabos configurados no sistema.</p>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{% url 'siscqt_core:criar_cabo' %}" class="btn btn-primary">Adicionar Novo Cabo</a>
+        <a href="{% url 'siscqt_core:configuracoes' %}" class="btn btn-secondary">Voltar para Configurações</a>
+    </div>
+
+    {% if cabos %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Coeficiente</th>
+                        <th>Preço</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cabo in cabos %}
+                        <tr>
+                            <td>{{ cabo.nome }}</td>
+                            <td>{{ cabo.coeficiente }}</td>
+                            <td>{{ cabo.preco }}</td>
+                            <td>
+                                <a href="{% url 'siscqt_core:editar_cabo' cabo.nome %}" class="btn btn-info btn-sm">Editar</a>
+                                <a href="{% url 'siscqt_core:excluir_cabo' cabo.nome %}" class="btn btn-danger btn-sm">Excluir</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Nenhum cabo cadastrado. Adicione um novo cabo para começar!
+        </div>
+    {% endif %}
+{% endblock %}

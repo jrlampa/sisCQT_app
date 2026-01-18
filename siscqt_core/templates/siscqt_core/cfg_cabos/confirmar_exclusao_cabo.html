@@ -1,0 +1,19 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Confirmar Exclusão de Cabo{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Confirmar Exclusão de Cabo{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Excluir Cabo: {{ cabo.nome }}</h1>
+    <p class="lead">Você tem certeza que deseja excluir o cabo "<strong>{{ cabo.nome }}</strong>"?</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger me-2">Sim, Excluir</button>
+        <a href="{% url 'siscqt_core:listar_cabos' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Detalhe do Projeto: {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Detalhe do Projeto: {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Projeto: {{ projeto.nome }}</h1>
+    <p><strong>ID:</strong> {{ projeto.id }}</p>
+    <p class="mb-4"><strong>Data de Criação:</strong> {{ projeto.data_criacao }}</p>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Cenários do Projeto</h2>
+        <a href="{% url 'siscqt_core:criar_cenario' projeto.id %}" class="btn btn-success btn-sm">Criar Novo Cenário</a>
+    </div>
+
+    {% if cenarios %}
+        <p>Selecione um cenário para visualizar os resultados:</p>
+        <ul class="nav nav-tabs mb-3">
+            {% for cenario in cenarios %}
+                <li class="nav-item">
+                    <a class="nav-link {% if cenario == active_cenario %}active{% endif %}"
+                       href="{% url 'siscqt_core:detalhe_projeto_cenario' projeto.id cenario.id %}"
+                    >
+                        {{ cenario.nome_cenario }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if active_cenario %}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Resultados para o Cenário: {{ active_cenario.nome_cenario }}</h3>
+                    <div>
+                        <a href="{% url 'siscqt_core:editar_cenario' active_cenario.id %}" class="btn btn-sm btn-info me-2">Editar Cenário</a>
+                        <a href="{% url 'siscqt_core:excluir_cenario' active_cenario.id %}" class="btn btn-sm btn-danger">Excluir Cenário</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <a href="{% url 'siscqt_core:exportar_projeto_excel' projeto.id %}" class="btn btn-secondary btn-sm">Exportar Cenário Ativo para Excel</a>
+                    </p>
+
+                    {% if resultados_calculo %}
+                        <h4 class="mt-4">KPIs</h4>
+                        <ul class="list-group list-group-flush mb-4">
+                            {% for key, value in resultados_calculo.kpis.items %}
+                                <li class="list-group-item"><strong>{{ key|capfirst }}:</strong> {{ value }}</li>
+                            {% endfor %}
+                        </ul>
+
+                        <h4 class="mt-4">Avisos e Diagnósticos</h4>
+                        {% if resultados_calculo.avisos %}
+                            <div class="list-group mb-4">
+                                {% for aviso in resultados_calculo.avisos %}
+                                    <div class="list-group-item list-group-item-{% if 'CRÍTICO' in aviso %}danger{% elif 'ALERTA' in aviso %}warning{% else %}info{% endif %}">
+                                        {{ aviso }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="alert alert-success">Nenhum aviso ou erro de cálculo.</p>
+                        {% endif %}
+
+                        <h4 class="mt-4">Resultados Detalhados (DataFrame)</h4>
+                        <div class="table-responsive">
+                            {{ resultados_calculo.df_result_html|safe }}
+                        </div>
+
+                    {% else %}
+                        <div class="alert alert-info">Nenhum resultado de cálculo disponível para este cenário (ou falha no cálculo).</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info mt-3" role="alert">
+                Selecione um cenário acima para ver os resultados, ou <a href="{% url 'siscqt_core:criar_cenario' projeto.id %}">crie um novo agora</a>.
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Nenhum cenário configurado para este projeto. <a href="{% url 'siscqt_core:criar_cenario' projeto.id %}">Crie um agora.</a>
+        </div>
+    {% endif %}
+
+    <p class="mt-4"><a href="{% url 'siscqt_core:listar_projetos' %}" class="btn btn-secondary">Voltar para a lista de projetos</a></p>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'siscqt_core/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Cenário: {{ cenario.nome_cenario }}{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Editar Cenário: {{ cenario.nome_cenario }}</h1>
+    <p class="mb-4">Projeto: <a href="{% url 'siscqt_core:detalhe_projeto' projeto.id %}" class="link-primary">{{ projeto.nome }}</a></p>
+
+    <div class="card p-4">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary me-2">Salvar Alterações</button>
+            <a href="{% url 'siscqt_core:detalhe_projeto' projeto.id %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

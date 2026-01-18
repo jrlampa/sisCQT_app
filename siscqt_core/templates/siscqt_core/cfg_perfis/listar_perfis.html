@@ -1,0 +1,54 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar Perfis{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar Perfis{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Gerenciar Perfis</h1>
+    <p class="lead mb-4">Lista de todos os perfis de configuração cadastrados no sistema.</p>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{% url 'siscqt_core:criar_perfil' %}" class="btn btn-primary">Adicionar Novo Perfil</a>
+        <a href="{% url 'siscqt_core:configuracoes' %}" class="btn btn-secondary">Voltar para Configurações</a>
+    </div>
+
+    {% if perfis %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>CQT Máx (%)</th>
+                        <th>Sobrecarga Máx (%)</th>
+                        <th>Metros Máx (m)</th>
+                        <th>Clientes Máx</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for perfil in perfis %}
+                        <tr>
+                            <td>{{ perfil.nome }}</td>
+                            <td>{{ perfil.cqt_max }}</td>
+                            <td>{{ perfil.sobrecarga_max }}</td>
+                            <td>{{ perfil.metros_max }}</td>
+                            <td>{{ perfil.clientes_max }}</td>
+                            <td>
+                                <a href="{% url 'siscqt_core:editar_perfil' perfil.nome %}" class="btn btn-info btn-sm">Editar</a>
+                                <a href="{% url 'siscqt_core:excluir_perfil' perfil.nome %}" class="btn btn-danger btn-sm">Excluir</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Nenhum perfil cadastrado. Adicione um novo perfil para começar!
+        </div>
+    {% endif %}
+{% endblock %}

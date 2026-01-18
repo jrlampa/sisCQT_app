@@ -1,0 +1,50 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar IPs{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar IPs{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Gerenciar Pontos de Iluminação (IPs)</h1>
+    <p class="lead mb-4">Lista de todos os tipos de IP configurados no sistema.</p>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{% url 'siscqt_core:criar_ip' %}" class="btn btn-primary">Adicionar Novo IP</a>
+        <a href="{% url 'siscqt_core:configuracoes' %}" class="btn btn-secondary">Voltar para Configurações</a>
+    </div>
+
+    {% if ips %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Potência (Watts)</th>
+                        <th>Preço</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ip in ips %}
+                        <tr>
+                            <td>{{ ip.nome }}</td>
+                            <td>{{ ip.potencia_watts }}</td>
+                            <td>{{ ip.preco }}</td>
+                            <td>
+                                <a href="{% url 'siscqt_core:editar_ip' ip.nome %}" class="btn btn-info btn-sm">Editar</a>
+                                <a href="{% url 'siscqt_core:excluir_ip' ip.nome %}" class="btn btn-danger btn-sm">Excluir</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Nenhum IP cadastrado. Adicione um novo tipo de IP para começar!
+        </div>
+    {% endif %}
+{% endblock %}

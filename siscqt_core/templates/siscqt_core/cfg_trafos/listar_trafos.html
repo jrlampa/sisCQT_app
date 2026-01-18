@@ -1,0 +1,46 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar Trafos{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}Gerenciar Trafos{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Gerenciar Trafos</h1>
+    <p class="lead mb-4">Lista de todas as potências de transformadores configuradas no sistema.</p>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{% url 'siscqt_core:criar_trafo' %}" class="btn btn-primary">Adicionar Novo Trafo</a>
+        <a href="{% url 'siscqt_core:configuracoes' %}" class="btn btn-secondary">Voltar para Configurações</a>
+    </div>
+
+    {% if trafos %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>KVA</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trafo in trafos %}
+                        <tr>
+                            <td>{{ trafo.kva }}</td>
+                            <td>
+                                <a href="{% url 'siscqt_core:editar_trafo' trafo.kva %}" class="btn btn-info btn-sm">Editar</a>
+                                <a href="{% url 'siscqt_core:excluir_trafo' trafo.kva %}" class="btn btn-danger btn-sm">Excluir</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Nenhum trafo cadastrado. Adicione um novo trafo para começar!
+        </div>
+    {% endif %}
+{% endblock %}

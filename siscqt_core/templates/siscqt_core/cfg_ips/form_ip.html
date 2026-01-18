@@ -1,0 +1,33 @@
+{% extends 'siscqt_core/base.html' %}
+
+{% block title %}{{ acao }} IP{% endblock %}
+
+{% block content %}
+{% extends 'siscqt_core/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ acao }} IP{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">{{ acao }} IP</h1>
+
+    <div class="card p-4">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary me-2">{{ acao }}</button>
+            <a href="{% url 'siscqt_core:listar_ips' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

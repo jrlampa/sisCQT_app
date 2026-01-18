@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-mono-tech: 'Roboto Mono', 'Lucida Console', 'Courier New', monospace;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Technical typography for numbers */
+.font-mono-numbers {
+  font-family: var(--font-mono-tech);
+}
+
+/* Skeleton Screen styles */
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: #e2e8f0; /* Tailwind gray-200 */
+  border-radius: 4px;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.App-header {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reactflow-wrapper {
+  flex-grow: 1;
+  position: relative;
+}
+
+/* Custom node styles */
+.react-flow__node {
+  border-width: 1px;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.react-flow__node.type-source {
+  border-color: #4CAF50; /* Green for sources */
+  background-color: #E8F5E9;
+}
+
+.react-flow__node.type-load {
+  border-color: #2196F3; /* Blue for loads */
+  background-color: #E3F2FD;
+}
+
+.react-flow__node.status-ok {
+  border-color: #4CAF50; /* Green */
+  background-color: #E8F5E9;
+}
+
+.react-flow__node.status-attention {
+  border-color: #FFC107; /* Amber */
+  background-color: #FFF8E1;
+}
+
+.react-flow__node.status-critical {
+  border-color: #F44336; /* Red */
+  background-color: #FFEBEE;
+}
+
+.react-flow__edge path {
+  stroke-width: 2;
+  stroke: #B0BEC5;
+}
+
+.react-flow__edge.status-ok path {
+  stroke: #66BB6A;
+}
+
+.react-flow__edge.status-attention path {
+  stroke: #FFD54F;
+}
+
+.react-flow__edge.status-critical path {
+  stroke: #EF5350;
+}
+
+/* Panel de Detalhes */
+aside {
+  width: 25%; /* Default width */
+  min-width: 300px; /* Minimum width for the panel */
+}
+
+/* Tabela de Rede */
+.table-container {
+  overflow-x: auto; /* Enable horizontal scrolling */
+  width: 100%; /* Ensure container takes full width */
+}
+
+.table-container table {
+  min-width: 1400px; /* Enforce minimum width for the table */
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-container th,
+.table-container td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+  white-space: nowrap; /* Prevent text wrapping in table cells */
+}
+
+.table-container th {
+  background-color: #f2f2f2;
+}
+
+/* Basic utilities for flexbox/layout */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-grow { flex-grow: 1; }
+.h-screen { height: 100vh; }
+.relative { position: relative; }
+.p-4 { padding: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.text-xl { font-size: 1.25rem; }
+.text-lg { font-size: 1.125rem; }
+.text-sm { font-size: 0.875rem; }
+.font-bold { font-weight: 700; }
+.text-center { text-align: center; }
+.bg-gray-800 { background-color: #2D3748; } /* Tailwind gray-800 */
+.bg-gray-100 { background-color: #F7FAFC; } /* Tailwind gray-100 */
+.text-white { color: #ffffff; }
+.border-r { border-right-width: 1px; }
+.border-gray-700 { border-color: #4A5568; } /* Tailwind gray-700 */
+.overflow-y-auto { overflow-y: auto; }
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+  color: #333;
+}
