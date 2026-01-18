@@ -44,10 +44,10 @@ const ConfigurationPage: React.FC = () => {
   const fetchAllConfigs = async () => {
     try {
       const [cabosRes, ipsRes, trafosRes, perfisRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/cabos/'),
-        axios.get('http://127.0.0.1:8000/api/ips/'),
-        axios.get('http://127.0.0.1:8000/api/trafos/'),
-        axios.get('http://127.0.0.1:8000/api/perfis/'),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/cabos/`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/ips/`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/trafos/`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/perfis/`),
       ]);
       setCabos(cabosRes.data);
       setIps(ipsRes.data);
@@ -66,7 +66,7 @@ const ConfigurationPage: React.FC = () => {
 
   const handleCreate = async (endpoint: string, data: any, resetter: () => void) => {
     try {
-      await axios.post(`http://127.0.0.1:8000/api/${endpoint}/`, data);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/${endpoint}/`, data);
       fetchAllConfigs();
       resetter();
     } catch (error: any) {
@@ -78,7 +78,7 @@ const ConfigurationPage: React.FC = () => {
   const handleDelete = async (endpoint: string, id: string | number) => {
     if (window.confirm(`Are you sure you want to delete this ${endpoint.slice(0, -1)}?`)) {
       try {
-        await axios.delete(`http://127.0.0.1:8000/api/${endpoint}/${id}/`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/api/${endpoint}/${id}/`);
         fetchAllConfigs();
       } catch (error: any) {
         console.error(`Failed to delete ${endpoint}:`, error.response?.data || error.message);
@@ -107,7 +107,7 @@ const ConfigurationPage: React.FC = () => {
     if (!editingCabo) return;
     setUpdatingCabo(true);
     try {
-      await axios.put(`http://127.0.0.1:8000/api/cabos/${editingCabo.nome}/`, editedCaboData);
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/cabos/${editingCabo.nome}/`, editedCaboData);
       fetchAllConfigs();
       setShowEditCaboModal(false);
       setEditingCabo(null);
@@ -140,7 +140,7 @@ const ConfigurationPage: React.FC = () => {
     if (!editingIp) return;
     setUpdatingIp(true);
     try {
-      await axios.put(`http://127.0.0.1:8000/api/ips/${editingIp.nome}/`, editedIpData);
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/ips/${editingIp.nome}/`, editedIpData);
       fetchAllConfigs();
       setShowEditIpModal(false);
       setEditingIp(null);
@@ -173,7 +173,7 @@ const ConfigurationPage: React.FC = () => {
     if (!editingTrafo) return;
     setUpdatingTrafo(true);
     try {
-      await axios.put(`http://127.0.0.1:8000/api/trafos/${editingTrafo.kva}/`, editedTrafoData);
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/trafos/${editingTrafo.kva}/`, editedTrafoData);
       fetchAllConfigs();
       setShowEditTrafoModal(false);
       setEditingTrafo(null);
@@ -206,7 +206,7 @@ const ConfigurationPage: React.FC = () => {
     if (!editingPerfil) return;
     setUpdatingPerfil(true);
     try {
-      await axios.put(`http://127.0.0.1:8000/api/perfis/${editingPerfil.nome}/`, editedPerfilData);
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/perfis/${editingPerfil.nome}/`, editedPerfilData);
       fetchAllConfigs();
       setShowEditPerfilModal(false);
       setEditingPerfil(null);

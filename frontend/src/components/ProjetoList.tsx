@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { calcularRede } from '../services/api';
 import TrechoTable from './TrechoTable';
 import CalculationResult from './CalculationResult';
 import SimulationModule from './SimulationModule'; // Import the SimulationModule
@@ -81,7 +82,7 @@ const ProjetoList: React.FC = () => {
   const handleDeleteProject = async (projectId: number) => {
     if (window.confirm('Are you sure you want to delete this project and all its scenarios?')) {
         try {
-            await axios.delete(`http://127.0.0.1:8000/api/projetos/${projectId}/`);
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/projetos/${projectId}/`);
             setProjetos(projetos.filter(p => p.id !== projectId));
             // Clear selected scenario and trechos if the deleted project contained them
             if (selectedScenario && projetos.find(p => p.id === projectId)?.cenarios.some(c => c.id === selectedScenario.id)) {
@@ -100,7 +101,7 @@ const ProjetoList: React.FC = () => {
   const handleDeleteScenario = async (scenarioId: number, projectId: number) => {
     if (window.confirm('Are you sure you want to delete this scenario?')) {
         try {
-            await axios.delete(`http://127.0.0.1:8000/api/cenarios/${scenarioId}/`);
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/cenarios/${scenarioId}/`);
             setProjetos(prevProjetos => prevProjetos.map(p =>
                 p.id === projectId
                     ? { ...p, cenarios: p.cenarios.filter(c => c.id !== scenarioId) }
@@ -130,7 +131,7 @@ const ProjetoList: React.FC = () => {
               formData.append('file', newProjectFile);
               // The backend expects project_name as a query parameter for upload_excel
               const response = await axios.post(
-                  `http://127.0.0.1:8000/api/projetos/upload_excel/?project_name=${newProjectName}`,
+                  `${import.meta.env.VITE_API_URL}/api/projetos/upload_excel/?project_name=${newProjectName}`,
                   formData,
                   {
                       headers: {
@@ -147,7 +148,7 @@ const ProjetoList: React.FC = () => {
               // and the backend serializer handles the defaults.
               // If the backend required more data, this would need to be adjusted.
               const response = await axios.post(
-                  'http://127.0.0.1:8000/api/projetos/',
+                  `${import.meta.env.VITE_API_URL}/api/projetos/`,
                   { nome: newProjectName } // Only send the name for a blank project
               );
               setProjetos([...projetos, response.data]);
@@ -183,7 +184,7 @@ const ProjetoList: React.FC = () => {
               payload.copy_from_cenario_id = scenarioToCopyId; // Custom field for copying logic in backend
           }
 
-          const response = await axios.post('http://127.0.0.1:8000/api/cenarios/', payload);
+          const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/cenarios/`, payload);
           // Instead of re-fetching all projects, we can optimize by updating the specific project
           setProjetos(prevProjetos => prevProjetos.map(p =>
               p.id === currentProjectIdForScenario
@@ -219,7 +220,7 @@ const ProjetoList: React.FC = () => {
     setUpdatingScenario(true);
     try {
         const response = await axios.put(
-            `http://127.0.0.1:8000/api/cenarios/${editingScenario.id}/`,
+            `${import.meta.env.VITE_API_URL}/api/cenarios/${editingScenario.id}/`,
             editedScenarioData
         );
         // Update the projects state with the modified scenario
@@ -261,7 +262,7 @@ const ProjetoList: React.FC = () => {
   useEffect(() => {
     const fetchProjetos = async () => {
       try {
-        const response = await axios.get<Projeto[]>('http://127.0.0.1:8000/api/projetos/');
+        const response = await axios.get<Projeto[]>(`${import.meta.env.VITE_API_URL}/api/projetos/`);
         setProjetos(response.data);
       } catch (err) {
         setError('Failed to fetch projects.');
@@ -279,7 +280,7 @@ const ProjetoList: React.FC = () => {
     setCalculationResult(null); // Clear previous results
     setLoadingTrechos(true);
     try {
-      const response = await axios.get<Trecho[]>(`http://127.0.0.1:8000/api/trechos/?projeto=${projetoId}&nome_cenario=${cenario.nome_cenario}`);
+      const response = await axios.get<Trecho[]>(`${import.meta.env.VITE_API_URL}/api/trechos/?projeto=${projetoId}&nome_cenario=${cenario.nome_cenario}`);
       setTrechos(response.data);
       setActiveResultTab('trechos'); // Set active tab to trechos when a scenario is selected
     } catch (err) {
@@ -301,14 +302,20 @@ const ProjetoList: React.FC = () => {
     setTrechos(prevTrechos => prevTrechos.filter(t => t.id !== trechoId));
   };
 
-  const handleCalcularClick = async (cenarioId: number) => {
+  const handleCalcularClick = async (cenario: Cenario) => {
     setLoadingCalculation(true);
     try {
-      const response = await axios.post<CalculationResultData>(`http://127.0.0.1:8000/api/cenarios/${cenarioId}/calcular/`);
+      if (!cenario || !trechos) {
+        setError('Cenário ou trechos não selecionados.');
+        setLoadingCalculation(false);
+        return;
+      }
+      const response = await calcularRede(cenario, trechos);
       setCalculationResult(response.data);
       setActiveResultTab('calculation'); // Set active tab to calculation results
     } catch (err: any) {
       console.error('Failed to calculate:', err);
+      setError(`Failed to calculate: ${err.response?.data?.error || err.message}`);
     } finally {
       setLoadingCalculation(false);
     }
@@ -317,7 +324,7 @@ const ProjetoList: React.FC = () => {
   // Handlers for exporting data
   const handleExportCsv = async (cenarioId: number, nomeProjeto: string, nomeCenario: string) => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/cenarios/${cenarioId}/export_csv/`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cenarios/${cenarioId}/export_csv/`, {
         responseType: 'blob', // Important for file downloads
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -335,7 +342,7 @@ const ProjetoList: React.FC = () => {
 
   const handleExportPdf = async (cenarioId: number, nomeProjeto: string, nomeCenario: string) => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/cenarios/${cenarioId}/export_pdf/`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cenarios/${cenarioId}/export_pdf/`, {
         responseType: 'blob', // Important for file downloads
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -431,7 +438,7 @@ const ProjetoList: React.FC = () => {
                           {cenario.nome_cenario}
                           <div>
                             <button className="btn btn-sm btn-info me-2" onClick={(e) => { e.stopPropagation(); openEditScenarioModal(cenario); }} title="Edit Scenario">Edit</button>
-                            <button className="btn btn-sm btn-primary me-2" onClick={(e) => { e.stopPropagation(); handleCalcularClick(cenario.id); }}>Calcular</button>
+                            <button className="btn btn-sm btn-primary me-2" onClick={(e) => { e.stopPropagation(); handleCalcularClick(cenario); }}>Calcular</button>
                             {/* Export Buttons */}
                             <button className="btn btn-sm btn-secondary me-2" onClick={(e) => { e.stopPropagation(); handleExportCsv(cenario.id, projeto.nome, cenario.nome_cenario); }} title="Export CSV">CSV</button>
                             <button className="btn btn-sm btn-secondary me-2" onClick={(e) => { e.stopPropagation(); handleExportPdf(cenario.id, projeto.nome, cenario.nome_cenario); }} title="Export PDF">PDF</button>

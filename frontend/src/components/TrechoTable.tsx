@@ -44,8 +44,8 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
     const fetchConfigOptions = async () => {
       try {
         const [cabosRes, ipsRes] = await Promise.all([
-          axios.get('http://127.0.0.1:8000/api/cabos/'),
-          axios.get('http://127.0.0.1:8000/api/ips/'),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/cabos/`),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/ips/`),
         ]);
         setCabosOptions(cabosRes.data.map((c: any) => c.nome));
         setIpsOptions(ipsRes.data.map((ip: any) => ip.nome));
@@ -81,7 +81,7 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
         qtd_ip: parseInt(editedData.qtd_ip?.toString() || '0'),
       };
 
-      const response = await axios.put(`http://127.0.0.1:8000/api/trechos/${editRowId}/`, dataToSave);
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/trechos/${editRowId}/`, dataToSave);
       onSave(response.data);
       setEditRowId(null);
       setEditedData({});
@@ -130,7 +130,7 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
             qtd_ip: parseInt(newTrechoData.qtd_ip?.toString() || '0'),
         };
 
-        const response = await axios.post(`http://127.0.0.1:8000/api/trechos/`, dataToSave);
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/trechos/`, dataToSave);
         onAdd(response.data); // Notify parent component to update its trechos state
         // Reset form fields
         setNewTrechoData({ ponto: '', montante: '', metros: 0, cabo: '', mono: 0, bi: 0, tri: 0, tri_esp: 0, carga_esp: 0, tipo_ip: '', qtd_ip: 0 });
@@ -145,7 +145,7 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
   const handleDeleteTrecho = async (trechoId: number) => {
       if (window.confirm('Are you sure you want to delete this trecho?')) {
           try {
-              await axios.delete(`http://127.0.0.1:8000/api/trechos/${trechoId}/`);
+              await axios.delete(`${import.meta.env.VITE_API_URL}/api/trechos/${trechoId}/`);
               onRemove(trechoId); // Notify parent component to update its trechos state
           } catch (error: any) {
               console.error('Failed to delete trecho:', error.response?.data || error.message);

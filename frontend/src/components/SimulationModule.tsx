@@ -25,7 +25,7 @@ const SimulationModule: React.FC<SimulationModuleProps> = ({ cenarioId, currentT
   useEffect(() => {
     const fetchCabosOptions = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/cabos/');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabos/`);
         setCabosOptions(response.data.map((c: any) => c.nome));
         // Optionally pre-select some common cables
         const defaultCables = response.data.filter((c: any) => c.nome.includes('Al')).map((c: any) => c.nome);
@@ -49,7 +49,7 @@ const SimulationModule: React.FC<SimulationModuleProps> = ({ cenarioId, currentT
 
     try {
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/cenarios/${cenarioId}/simular_readequacao/`,
+        `${import.meta.env.VITE_API_URL}/api/cenarios/${cenarioId}/simular_readequacao/`,
         { cabos_habilitados_nomes: selectedCables }
       );
       setSimulationResult(response.data);
