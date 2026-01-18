@@ -1,3 +1,0 @@
-fix: Resolve JSX syntax error in TrechoTable.tsx
-
-Wrapped the returned JSX content in `frontend/src/components/TrechoTable.tsx` within a React Fragment (`<>...</>`) to adhere to React's rule of returning a single root element. This resolves the "Expected ',', got 'ident'" syntax error that occurred when the component attempted to render multiple top-level elements.
