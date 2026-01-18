@@ -1,4 +1,4 @@
-import React from 'react';
+import TechnicalSuggestions from './TechnicalSuggestions';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -89,6 +89,15 @@ const CalculationResult: React.FC<CalculationResultProps> = ({ results }) => {
         <h4>Gráfico de Queda de Tensão</h4>
         <Bar options={chartOptions} data={chartData} />
       </div>
+
+      {/* Technical Suggestions Component */}
+      {kpis.baricentro_analysis && results.recomendacoes && (
+        <TechnicalSuggestions
+          recomendacoes={results.recomendacoes}
+          baricentroAnalysis={kpis.baricentro_analysis}
+          avisos={avisos}
+        />
+      )}
     </div>
   );
 };
