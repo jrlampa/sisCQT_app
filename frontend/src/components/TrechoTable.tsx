@@ -155,80 +155,81 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
   };
 
   return (
-    <table className="table table-bordered">
-      <thead>
-        <tr>
-          <th>Ponto</th>
-          <th>Montante</th>
-          <th>Metros</th>
-          <th>Cabo</th>
-          <th>Mono</th>
-          <th>Bi</th>
-          <th>Tri</th>
-          <th>Tri Esp</th>
-          <th>Carga Esp</th>
-          <th>Tipo IP</th>
-          <th>Qtd IP</th>
-          <th>CQT Acum. (%)</th> {/* New column */}
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {trechos.map((trecho) => (
-          <tr key={trecho.id}>
-            {editRowId === trecho.id ? (
-              <>
-                <td><input type="text" value={editedData.ponto || ''} onChange={(e) => handleChange(e, 'ponto')} className="form-control" /></td>
-                <td><input type="text" value={editedData.montante || ''} onChange={(e) => handleChange(e, 'montante')} className="form-control" /></td>
-                <td><input type="number" step="0.01" value={editedData.metros || 0} onChange={(e) => handleChange(e, 'metros')} className="form-control" /></td>
-                <td>
-                  <select value={editedData.cabo || ''} onChange={(e) => handleChange(e, 'cabo')} className="form-select">
-                    <option value="">-- Selecione --</option>
-                    {cabosOptions.map(option => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                </td>
-                <td><input type="number" step="1" value={editedData.mono || 0} onChange={(e) => handleChange(e, 'mono')} className="form-control" /></td>
-                <td><input type="number" step="1" value={editedData.bi || 0} onChange={(e) => handleChange(e, 'bi')} className="form-control" /></td>
-                <td><input type="number" step="1" value={editedData.tri || 0} onChange={(e) => handleChange(e, 'tri')} className="form-control" /></td>
-                <td><input type="number" step="1" value={editedData.tri_esp || 0} onChange={(e) => handleChange(e, 'tri_esp')} className="form-control" /></td>
-                <td><input type="number" step="0.01" value={editedData.carga_esp || 0} onChange={(e) => handleChange(e, 'carga_esp')} className="form-control" /></td>
-                <td>
-                  <select value={editedData.tipo_ip || ''} onChange={(e) => handleChange(e, 'tipo_ip')} className="form-select">
-                    <option value="">-- Selecione --</option>
-                    {ipsOptions.map(option => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                </td>
-                <td><input type="number" step="1" value={editedData.qtd_ip || 0} onChange={(e) => handleChange(e, 'qtd_ip')} className="form-control" /></td>
-                <td>{(cqtResults[editedData.ponto || ''] || 0).toFixed(2)}</td> {/* Display CQT Acumulada */}
-                <td>
-                  <button className="btn btn-sm btn-success me-2" onClick={handleSave}>Salvar</button>
-                  <button className="btn btn-sm btn-secondary" onClick={handleCancel}>Cancelar</button>
-                </td>
-              </>
-            ) : (
-              <>
-                <td>{trecho.ponto}</td>
-                <td>{trecho.montante}</td>
-                <td>{trecho.metros}</td>
-                <td>{trecho.cabo}</td>
-                <td>{trecho.mono}</td>
-                <td>{trecho.bi}</td>
-                <td>{trecho.tri}</td>
-                <td>{trecho.tri_esp}</td>
-                <td>{trecho.carga_esp}</td>
-                <td>{trecho.tipo_ip}</td>
-                <td>{trecho.qtd_ip}</td>
-                <td>{(cqtResults[trecho.ponto] || 0).toFixed(2)}</td> {/* Display CQT Acumulada */}
-                <td>
-                  <button className="btn btn-sm btn-primary me-2" onClick={() => handleEdit(trecho)}>Editar</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDeleteTrecho(trecho.id)}>Deletar</button>
-                </td>
-              </>
-            )}
+    <>
+      <table className="table table-bordered">
+        <thead>
+          <tr>
+            <th>Ponto</th>
+            <th>Montante</th>
+            <th>Metros</th>
+            <th>Cabo</th>
+            <th>Mono</th>
+            <th>Bi</th>
+            <th>Tri</th>
+            <th>Tri Esp</th>
+            <th>Carga Esp</th>
+            <th>Tipo IP</th>
+            <th>Qtd IP</th>
+            <th>CQT Acum. (%)</th> {/* New column */}
+            <th>Ações</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {trechos.map((trecho) => (
+            <tr key={trecho.id}>
+              {editRowId === trecho.id ? (
+                <>
+                  <td><input type="text" value={editedData.ponto || ''} onChange={(e) => handleChange(e, 'ponto')} className="form-control" /></td>
+                  <td><input type="text" value={editedData.montante || ''} onChange={(e) => handleChange(e, 'montante')} className="form-control" /></td>
+                  <td><input type="number" step="0.01" value={editedData.metros || 0} onChange={(e) => handleChange(e, 'metros')} className="form-control" /></td>
+                  <td>
+                    <select value={editedData.cabo || ''} onChange={(e) => handleChange(e, 'cabo')} className="form-select">
+                      <option value="">-- Selecione --</option>
+                      {cabosOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  </td>
+                  <td><input type="number" step="1" value={editedData.mono || 0} onChange={(e) => handleChange(e, 'mono')} className="form-control" /></td>
+                  <td><input type="number" step="1" value={editedData.bi || 0} onChange={(e) => handleChange(e, 'bi')} className="form-control" /></td>
+                  <td><input type="number" step="1" value={editedData.tri || 0} onChange={(e) => handleChange(e, 'tri')} className="form-control" /></td>
+                  <td><input type="number" step="1" value={editedData.tri_esp || 0} onChange={(e) => handleChange(e, 'tri_esp')} className="form-control" /></td>
+                  <td><input type="number" step="0.01" value={editedData.carga_esp || 0} onChange={(e) => handleChange(e, 'carga_esp')} className="form-control" /></td>
+                  <td>
+                    <select value={editedData.tipo_ip || ''} onChange={(e) => handleChange(e, 'tipo_ip')} className="form-select">
+                      <option value="">-- Selecione --</option>
+                      {ipsOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  </td>
+                  <td><input type="number" step="1" value={editedData.qtd_ip || 0} onChange={(e) => handleChange(e, 'qtd_ip')} className="form-control" /></td>
+                  <td>{(cqtResults[editedData.ponto || ''] || 0).toFixed(2)}</td> {/* Display CQT Acumulada */}
+                  <td>
+                    <button className="btn btn-sm btn-success me-2" onClick={handleSave}>Salvar</button>
+                    <button className="btn btn-sm btn-secondary" onClick={handleCancel}>Cancelar</button>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td>{trecho.ponto}</td>
+                  <td>{trecho.montante}</td>
+                  <td>{trecho.metros}</td>
+                  <td>{trecho.cabo}</td>
+                  <td>{trecho.mono}</td>
+                  <td>{trecho.bi}</td>
+                  <td>{trecho.tri}</td>
+                  <td>{trecho.tri_esp}</td>
+                  <td>{trecho.carga_esp}</td>
+                  <td>{trecho.tipo_ip}</td>
+                  <td>{trecho.qtd_ip}</td>
+                  <td>{(cqtResults[trecho.ponto] || 0).toFixed(2)}</td> {/* Display CQT Acumulada */}
+                  <td>
+                    <button className="btn btn-sm btn-primary me-2" onClick={() => handleEdit(trecho)}>Editar</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDeleteTrecho(trecho.id)}>Deletar</button>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
       <div className="mt-4 p-3 border rounded shadow-sm">
         <h5>Adicionar Novo Trecho</h5>
         <form onSubmit={handleAddNewTrecho}>
@@ -280,6 +281,7 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
           </div>
         </form>
       </div>
+    </>
   );
 };
 
