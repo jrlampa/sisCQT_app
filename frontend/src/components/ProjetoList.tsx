@@ -4,6 +4,41 @@ import { calcularRede } from '../services/api';
 import TrechoTable from './TrechoTable';
 import CalculationResult from './CalculationResult';
 import SimulationModule from './SimulationModule'; // Import the SimulationModule
+import GlassCard from './GlassCard'; // Import GlassCard
+
+import {
+  Box,
+  Grid,
+  Typography,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Tab,
+  Tabs,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  ListItemButton,
+} from '@mui/material';
+
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import SettingsIcon from '@mui/icons-material/Settings';
+import DescriptionIcon from '@mui/icons-material/Description'; // For CSV
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // For PDF
 
 interface Trecho {
   id: number;
@@ -360,11 +395,16 @@ const ProjetoList: React.FC = () => {
 
 
   if (loading) {
-    return <div className="text-center mt-5">Loading projects...</div>;
+    return (
+      <Box sx={{ textAlign: 'center', mt: 5 }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2 }}>Loading projects...</Typography>
+      </Box>
+    );
   }
 
   if (error) {
-    return <div className="alert alert-danger mt-5">{error}</div>;
+    return <Alert severity="error" sx={{ mt: 5 }}>{error}</Alert>;
   }
 
   // It should only be created if calculationResult is available.
@@ -376,129 +416,140 @@ const ProjetoList: React.FC = () => {
   }
 
   return (
-    <div className="container mt-5">
-      <h1 className="mb-4">Lista de Projetos</h1>
-      <div className="mb-4 p-4 border rounded shadow-sm">
-          <h2>Criar Novo Projeto</h2>
+    <Box sx={{ p: 3, mt: 2 }}> {/* Main container with padding and top margin for floating app bar */}
+      <Typography variant="h4" gutterBottom>Lista de Projetos</Typography> {/* h1 converted to Typography */}
+      <GlassCard sx={{ mb: 4 }}>
+          <Typography variant="h5" gutterBottom>Criar Novo Projeto</Typography>
           <form onSubmit={handleCreateProject}>
-              <div className="mb-3">
-                  <label htmlFor="newProjectName" className="form-label">Nome do Projeto</label>
-                  <input
-                      type="text"
-                      className="form-control"
-                      id="newProjectName"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      placeholder="Ex: Projeto Nova Rede"
-                      required
-                  />
-              </div>
-              <div className="mb-3">
-                  <label htmlFor="newProjectFile" className="form-label">Upload de Arquivo Excel (Opcional)</label>
-                  <input
+              <TextField
+                  fullWidth
+                  label="Nome do Projeto"
+                  id="newProjectName"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="Ex: Projeto Nova Rede"
+                  required
+                  sx={{ mb: 2 }}
+              />
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel shrink htmlFor="newProjectFile">Upload de Arquivo Excel (Opcional)</InputLabel>
+                  <TextField
+                      fullWidth
                       type="file"
-                      className="form-control"
                       id="newProjectFile"
-                      accept=".xlsx, .xls"
-                      onChange={(e) => setNewProjectFile(e.target.files ? e.target.files[0] : null)}
+                      inputProps={{ accept: ".xlsx, .xls" }}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewProjectFile(e.target.files ? e.target.files[0] : null)}
+                      sx={{ mt: 3 }} // Adjust mt to align with InputLabel
                   />
-                  <div className="form-text">Planilha da concessionária para importação automática.</div>
-              </div>
-              <button type="submit" className="btn btn-success" disabled={creatingProject}>
+                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>Planilha da concessionária para importação automática.</Typography>
+              </FormControl>
+              <Button type="submit" variant="contained" color="primary" disabled={creatingProject} sx={{
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+              }}>
                   {creatingProject ? 'Criando...' : 'Criar Projeto'}
-              </button>
-              {creatingProject && <div className="spinner-border spinner-border-sm ms-2" role="status"></div>}
-              {error && <div className="alert alert-danger mt-3">{error}</div>}
+              </Button>
+              {creatingProject && <CircularProgress size={20} sx={{ ml: 2 }} />}
+              {error && <Alert severity="error" sx={{ mt: 3 }}>{error}</Alert>}
           </form>
-      </div>
+      </GlassCard>
       {projetos.length === 0 ? (
-        <div className="alert alert-info">Nenhum projeto encontrado.</div>
+        <Alert severity="info" sx={{ mt: 3 }}>Nenhum projeto encontrado.</Alert>
       ) : (
-        <div className="row">
+        <Grid container spacing={3}>
           {projetos.map((projeto) => (
-            <div key={projeto.id} className="col-md-6 col-lg-4 mb-4">
-              <div className="card h-100">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="card-title mb-0">{projeto.nome}</h5>
-                    <button
-                        className="btn btn-sm btn-danger"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteProject(projeto.id); }}
-                        title="Delete Project"
-                    >
-                        Delete
-                    </button>
-                  </div>
-                  <p className="card-text">Criado em: {new Date(projeto.data_criacao).toLocaleDateString()}</p>
-                  <h6 className="card-subtitle mb-2 text-muted">Cenários:</h6>
-                  {projeto.cenarios && projeto.cenarios.length > 0 ? (
-                    <ul className="list-group list-group-flush">
-                      {projeto.cenarios.map((cenario) => (
-                        <li key={cenario.id} className="list-group-item d-flex justify-content-between align-items-center" onClick={() => handleScenarioClick(cenario, projeto.id)} style={{cursor: 'pointer'}}>
-                          {cenario.nome_cenario}
-                          <div>
-                            <button className="btn btn-sm btn-info me-2" onClick={(e) => { e.stopPropagation(); openEditScenarioModal(cenario); }} title="Edit Scenario">Edit</button>
-                            <button className="btn btn-sm btn-primary me-2" onClick={(e) => { e.stopPropagation(); handleCalcularClick(cenario); }}>Calcular</button>
-                            {/* Export Buttons */}
-                            <button className="btn btn-sm btn-secondary me-2" onClick={(e) => { e.stopPropagation(); handleExportCsv(cenario.id, projeto.nome, cenario.nome_cenario); }} title="Export CSV">CSV</button>
-                            <button className="btn btn-sm btn-secondary me-2" onClick={(e) => { e.stopPropagation(); handleExportPdf(cenario.id, projeto.nome, cenario.nome_cenario); }} title="Export PDF">PDF</button>
-                            <button className="btn btn-sm btn-danger" onClick={(e) => { e.stopPropagation(); handleDeleteScenario(cenario.id, projeto.id); }} title="Delete Scenario">Delete</button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>Nenhum cenário associado.</p>
-                  )}
-                  <div className="d-grid mt-3">
-                    <button className="btn btn-sm btn-outline-secondary" onClick={() => openCreateScenarioModal(projeto.id)}>
-                      + Adicionar Cenário
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Grid key={projeto.id} sx={{ width: { xs: '100%', sm: '50%', md: '33.33%' } }}>
+              <GlassCard sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6">{projeto.nome}</Typography>
+                  <IconButton
+                      color="error"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteProject(projeto.id); }}
+                      title="Delete Project"
+                  >
+                      <DeleteIcon />
+                  </IconButton>
+                </Box>
+                <Typography variant="body2" color="text.secondary">Criado em: {new Date(projeto.data_criacao).toLocaleDateString()}</Typography>
+                <Typography variant="subtitle1" color="text.secondary" mt={2} mb={1}>Cenários:</Typography>
+                {projeto.cenarios && projeto.cenarios.length > 0 ? (
+                  <List disablePadding sx={{ flexGrow: 1 }}>
+                    {projeto.cenarios.map((cenario) => (
+                      <ListItem
+                        key={cenario.id}
+                        disablePadding
+                        secondaryAction={
+                          <Box>
+                            <IconButton edge="end" aria-label="edit" onClick={(e) => { e.stopPropagation(); openEditScenarioModal(cenario); }} title="Edit Scenario">
+                              <EditIcon />
+                            </IconButton>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                onClick={(e) => { e.stopPropagation(); handleCalcularClick(cenario); }}
+                                sx={{
+                                  ml: 1, // Margin left for spacing
+                                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                                  boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                                }}
+                            >
+                              Calcular
+                            </Button>
+                            <IconButton edge="end" aria-label="export csv" onClick={(e) => { e.stopPropagation(); handleExportCsv(cenario.id, projeto.nome, cenario.nome_cenario); }} title="Export CSV" sx={{ ml: 1 }}>
+                              <DescriptionIcon />
+                            </IconButton>
+                            <IconButton edge="end" aria-label="export pdf" onClick={(e) => { e.stopPropagation(); handleExportPdf(cenario.id, projeto.nome, cenario.nome_cenario); }} title="Export PDF" sx={{ ml: 1 }}>
+                              <PictureAsPdfIcon />
+                            </IconButton>
+                            <IconButton edge="end" aria-label="delete scenario" color="error" onClick={(e) => { e.stopPropagation(); handleDeleteScenario(cenario.id, projeto.id); }} title="Delete Scenario" sx={{ ml: 1 }}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </Box>
+                        }
+                      >
+                        <ListItemButton onClick={() => handleScenarioClick(cenario, projeto.id)}>
+                          <ListItemText primary={cenario.nome_cenario} />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2">Nenhum cenário associado.</Typography>
+                )}
+                <Box mt={3}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    onClick={() => openCreateScenarioModal(projeto.id)}
+                    startIcon={<AddIcon />}
+                    sx={{
+                      background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                      boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                    }}
+                  >
+                    Adicionar Cenário
+                  </Button>
+                </Box>
+              </GlassCard>
+            </Grid>
           ))}
-        </div>
+        </Grid>
       )}
 
       {selectedScenario && (
-        <div className="mt-5">
-          <h2>Trechos para o cenário: {selectedScenario.nome_cenario}</h2>
+        <Box sx={{ mt: 5 }}>
+          <Typography variant="h5" gutterBottom>Trechos para o cenário: {selectedScenario.nome_cenario}</Typography>
 
           {/* Navigation Tabs for Trecho Table, Calculation Results, Simulation */}
-          <ul className="nav nav-tabs mb-3">
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeResultTab === 'trechos' ? 'active' : ''}`}
-                onClick={() => setActiveResultTab('trechos')}
-              >
-                Tabela de Trechos
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeResultTab === 'calculation' ? 'active' : ''}`}
-                onClick={() => setActiveResultTab('calculation')}
-                disabled={!calculationResult} // Disable if no calculation has been run
-              >
-                Resultados do Cálculo
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeResultTab === 'simulation' ? 'active' : ''}`}
-                onClick={() => setActiveResultTab('simulation')}
-                disabled={!calculationResult} // Disable if no calculation has been run
-              >
-                Simulação
-              </button>
-            </li>
-          </ul>
-
+          <Tabs value={activeResultTab} onChange={(event: React.SyntheticEvent, newValue: 'trechos' | 'calculation' | 'simulation') => setActiveResultTab(newValue)} aria-label="resultado tabs" sx={{ mb: 3 }}>
+            <Tab label="Tabela de Trechos" value="trechos" />
+            <Tab label="Resultados do Cálculo" value="calculation" disabled={!calculationResult} />
+            <Tab label="Simulação" value="simulation" disabled={!calculationResult} />
+          </Tabs>
           {activeResultTab === 'trechos' && (
             loadingTrechos ? (
-              <div>Loading trechos...</div>
+              <Box sx={{ textAlign: 'center', mt: 5 }}><CircularProgress /><Typography sx={{ mt: 2 }}>Loading trechos...</Typography></Box>
             ) : (
               <TrechoTable
                 trechos={trechos}
@@ -513,180 +564,179 @@ const ProjetoList: React.FC = () => {
           )}
 
           {activeResultTab === 'calculation' && loadingCalculation && (
-            <div className="text-center mt-5">Calculando...</div>
+            <Box sx={{ textAlign: 'center', mt: 5 }}><CircularProgress /><Typography sx={{ mt: 2 }}>Calculando...</Typography></Box>
           )}
           {activeResultTab === 'calculation' && calculationResult && (
-            <div className="mt-5">
+            <GlassCard sx={{ mt: 5 }}>
               <CalculationResult results={calculationResult} />
-            </div>
+            </GlassCard>
           )}
 
           {activeResultTab === 'simulation' && selectedScenario && calculationResult && (
-            <div className="mt-5">
+            <Box sx={{ mt: 5 }}>
               <SimulationModule cenarioId={selectedScenario.id} currentTrechos={trechos} />
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
       )}
 
-      {/***** Create Scenario Modal *****/}
-      {showCreateScenarioModal && (
-        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Criar Novo Cenário para Projeto {currentProjectIdForScenario}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowCreateScenarioModal(false)}></button>
-              </div>
-              <form onSubmit={handleCreateScenario}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label htmlFor="newScenarioName" className="form-label">Nome do Cenário</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="newScenarioName"
-                      name="nome_cenario"
-                      value={newScenarioName}
-                      onChange={(e) => setNewScenarioName(e.target.value)}
-                      placeholder="Ex: Cenário Otimizado"
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="scenarioToCopy" className="form-label">Copiar de Cenário Existente (Opcional)</label>
-                    <select
-                      className="form-select"
-                      id="scenarioToCopy"
-                      value={scenarioToCopyId || ''}
-                      onChange={(e) => setScenarioToCopyId(e.target.value ? parseInt(e.target.value) : null)}
-                    >
-                      <option value="">-- Selecione um cenário --</option>
-                      {currentProjectIdForScenario &&
-                        projetos.find(p => p.id === currentProjectIdForScenario)?.cenarios.map(cenario => (
-                          <option key={cenario.id} value={cenario.id}>
-                            {cenario.nome_cenario}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  {error && <div className="alert alert-danger mt-3">{error}</div>}
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowCreateScenarioModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" disabled={creatingScenario}>
-                    {creatingScenario ? 'Criando...' : 'Criar Cenário'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/***** Create Scenario Modal (MUI Dialog) *****/}
+      <Dialog open={showCreateScenarioModal} onClose={() => setShowCreateScenarioModal(false)}>
+        <DialogTitle>Criar Novo Cenário para Projeto {currentProjectIdForScenario}</DialogTitle>
+        <form onSubmit={handleCreateScenario}>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="newScenarioName"
+              label="Nome do Cenário"
+              type="text"
+              fullWidth
+              variant="outlined"
+              name="nome_cenario"
+              value={newScenarioName}
+              onChange={(e) => setNewScenarioName(e.target.value)}
+              placeholder="Ex: Cenário Otimizado"
+              required
+              sx={{ mb: 2 }}
+            />
+            <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
+              <InputLabel id="scenarioToCopy-label">Copiar de Cenário Existente (Opcional)</InputLabel>
+              <Select
+                labelId="scenarioToCopy-label"
+                id="scenarioToCopy"
+                value={scenarioToCopyId || ''}
+                label="Copiar de Cenário Existente (Opcional)"
+                onChange={(e) => setScenarioToCopyId(e.target.value ? parseInt(e.target.value as string) : null)}
+              >
+                <MenuItem value="">-- Selecione um cenário --</MenuItem>
+                {currentProjectIdForScenario &&
+                  projetos.find(p => p.id === currentProjectIdForScenario)?.cenarios.map(cenario => (
+                    <MenuItem key={cenario.id} value={cenario.id}>
+                      {cenario.nome_cenario}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowCreateScenarioModal(false)}>Cancelar</Button>
+            <Button type="submit" disabled={creatingScenario} sx={{
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+            }}>
+              {creatingScenario ? <CircularProgress size={24} /> : 'Criar Cenário'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
-      {/***** Edit Scenario Modal *****/}
+      {/***** Edit Scenario Modal (MUI Dialog) *****/}
       {showEditScenarioModal && editingScenario && (
-        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Editar Cenário: {editingScenario.nome_cenario}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEditScenarioModal(false)}></button>
-              </div>
-              <form onSubmit={handleUpdateScenario}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label htmlFor="editNomeCenario" className="form-label">Nome do Cenário</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="editNomeCenario"
-                      name="nome_cenario"
-                      value={editedScenarioData.nome_cenario || ''}
-                      onChange={handleEditScenarioChange}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editTrafoKva" className="form-label">Trafo kVA</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-control"
-                      id="editTrafoKva"
-                      name="trafo_kva"
-                      value={editedScenarioData.trafo_kva || 0}
-                      onChange={handleEditScenarioChange}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editClasseTipo" className="form-label">Classe Tipo</label>
-                    <select
-                      className="form-select"
-                      id="editClasseTipo"
-                      name="classe_tipo"
-                      value={editedScenarioData.classe_tipo || ''}
-                      onChange={handleEditScenarioChange}
-                    >
-                      <option value="Automático">Automático</option>
-                      <option value="Manual">Manual</option>
-                    </select>
-                  </div>
-                  {editedScenarioData.classe_tipo === 'Manual' && (
-                    <div className="mb-3">
-                      <label htmlFor="editClasseManual" className="form-label">Classe Manual</label>
-                      <select
-                        className="form-select"
-                        id="editClasseManual"
-                        name="classe_manual"
-                        value={editedScenarioData.classe_manual || ''}
-                        onChange={handleEditScenarioChange}
-                      >
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                      </select>
-                    </div>
-                  )}
-                  <div className="mb-3">
-                    <label htmlFor="editFpIp" className="form-label">FP IP</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-control"
-                      id="editFpIp"
-                      name="fp_ip"
-                      value={editedScenarioData.fp_ip || 0}
-                      onChange={handleEditScenarioChange}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editPerfil" className="form-label">Perfil</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="editPerfil"
-                      name="perfil"
-                      value={editedScenarioData.perfil || ''}
-                      onChange={handleEditScenarioChange}
-                    />
-                  </div>
-                  {error && <div className="alert alert-danger mt-3">{error}</div>}
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditScenarioModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" disabled={updatingScenario}>
-                    {updatingScenario ? 'Salvando...' : 'Salvar Alterações'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <Dialog open={showEditScenarioModal} onClose={() => setShowEditScenarioModal(false)}>
+          <DialogTitle>Editar Cenário: {editingScenario.nome_cenario}</DialogTitle>
+          <form onSubmit={handleUpdateScenario}>
+            <DialogContent>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="editNomeCenario"
+                label="Nome do Cenário"
+                type="text"
+                fullWidth
+                variant="outlined"
+                name="nome_cenario"
+                value={editedScenarioData.nome_cenario || ''}
+                onChange={handleEditScenarioChange}
+                required
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                margin="dense"
+                id="editTrafoKva"
+                label="Trafo kVA"
+                type="number"
+                step="0.01"
+                fullWidth
+                variant="outlined"
+                name="trafo_kva"
+                value={editedScenarioData.trafo_kva || 0}
+                onChange={handleEditScenarioChange}
+                sx={{ mb: 2 }}
+              />
+              <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
+                <InputLabel id="editClasseTipo-label">Classe Tipo</InputLabel>
+                <Select
+                  labelId="editClasseTipo-label"
+                  id="editClasseTipo"
+                  name="classe_tipo"
+                  value={editedScenarioData.classe_tipo || ''}
+                  label="Classe Tipo"
+                  onChange={handleEditScenarioChange}
+                >
+                  <MenuItem value="Automático">Automático</MenuItem>
+                  <MenuItem value="Manual">Manual</MenuItem>
+                </Select>
+              </FormControl>
+              {editedScenarioData.classe_tipo === 'Manual' && (
+                <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
+                  <InputLabel id="editClasseManual-label">Classe Manual</InputLabel>
+                  <Select
+                    labelId="editClasseManual-label"
+                    id="editClasseManual"
+                    name="classe_manual"
+                    value={editedScenarioData.classe_manual || ''}
+                    label="Classe Manual"
+                    onChange={handleEditScenarioChange}
+                  >
+                    <MenuItem value="A">A</MenuItem>
+                    <MenuItem value="B">B</MenuItem>
+                    <MenuItem value="C">C</MenuItem>
+                    <MenuItem value="D">D</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+              <TextField
+                margin="dense"
+                id="editFpIp"
+                label="FP IP"
+                type="number"
+                step="0.01"
+                fullWidth
+                variant="outlined"
+                name="fp_ip"
+                value={editedScenarioData.fp_ip || 0}
+                onChange={handleEditScenarioChange}
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                margin="dense"
+                id="editPerfil"
+                label="Perfil"
+                type="text"
+                fullWidth
+                variant="outlined"
+                name="perfil"
+                value={editedScenarioData.perfil || ''}
+                onChange={handleEditScenarioChange}
+                sx={{ mb: 2 }}
+              />
+              {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowEditScenarioModal(false)}>Cancelar</Button>
+              <Button type="submit" disabled={updatingScenario} sx={{
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+              }}>
+                {updatingScenario ? <CircularProgress size={24} /> : 'Salvar Alterações'}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
       )}
-    </div>
-  );
+          </Box>  );
 };
 
 export default ProjetoList;

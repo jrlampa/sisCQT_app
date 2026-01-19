@@ -2,9 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import {
   DataGrid,
-  GridColDef,
   GridToolbar,
-  GridRowModel,
+} from '@mui/x-data-grid';
+import type {
+  GridColDef,
   GridRowsProp,
   GridRenderEditCellParams,
   GridActionsCellItem,
@@ -89,7 +90,7 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
   }, []);
 
   const processRowUpdate = useCallback(
-    async (newRow: GridRowModel, oldRow: GridRowModel) => {
+    async (newRow: Trecho, oldRow: Trecho) => {
       const updatedRow = { ...newRow, isNew: false } as Trecho;
       try {
         const dataToSave = {
@@ -292,7 +293,7 @@ const TrechoTable: React.FC<TrechoTableProps> = ({ trechos, onSave, projectId, n
       <DataGrid
         rows={rows}
         columns={columns}
-        editMode="row"
+        editMode="cell"
         processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={handleProcessRowUpdateError}
         getRowId={(row) => row.id}

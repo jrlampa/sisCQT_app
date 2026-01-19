@@ -1,5 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import GlassCard from './GlassCard'; // Import GlassCard
+
+import {
+  Box,
+  Typography,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  IconButton,
+  Tabs,
+  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid, // Add Grid here
+  Paper,
+} from '@mui/material';
+
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Close'; // Using Close icon for Cancel
+import CableIcon from '@mui/icons-material/Cable'; // For Cabos
+import LightbulbIcon from '@mui/icons-material/Lightbulb'; // For IPs
+import PowerIcon from '@mui/icons-material/Power'; // For Trafos
+import PeopleIcon from '@mui/icons-material/People'; // For Perfis (profiles)
+import SettingsIcon from '@mui/icons-material/Settings'; // For Simulation Config
+
 
 const ConfigurationPage: React.FC = () => {
   const [cabos, setCabos] = useState<any[]>([]);
@@ -221,301 +262,544 @@ const ConfigurationPage: React.FC = () => {
 
 
   if (loading) {
-    return <div className="text-center mt-5">Loading configurations...</div>;
+    return (
+      <Box sx={{ textAlign: 'center', mt: 5 }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2 }}>Loading configurations...</Typography>
+      </Box>
+    );
   }
 
   return (
-    <div className="container mt-5">
-      <h1>Configurações</h1>
+    <Box sx={{ p: 3, mt: 2 }}> {/* Main container with padding and top margin for floating app bar */}
+      <Typography variant="h4" gutterBottom>Configurações</Typography>
 
-      <ul className="nav nav-tabs mb-3">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'cabos' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cabos')}
-          >
-            Cabos
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'ips' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ips')}
-          >
-            IPs
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'trafos' ? 'active' : ''}`}
-            onClick={() => setActiveTab('trafos')}
-          >
-            Trafos
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'perfis' ? 'active' : ''}`}
-            onClick={() => setActiveTab('perfis')}
-          >
-            Perfis
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'simulation' ? 'active' : ''}`}
-            onClick={() => setActiveTab('simulation')}
-          >
-            Simulação
-          </button>
-        </li>
-      </ul>
+      <Tabs value={activeTab} onChange={(event: React.SyntheticEvent, newValue: typeof activeTab) => setActiveTab(newValue)} aria-label="configuração tabs" sx={{ mb: 3 }}>
+        <Tab label="Cabos" value="cabos" icon={<CableIcon />} iconPosition="start" />
+        <Tab label="IPs" value="ips" icon={<LightbulbIcon />} iconPosition="start" />
+        <Tab label="Trafos" value="trafos" icon={<PowerIcon />} iconPosition="start" />
+        <Tab label="Perfis" value="perfis" icon={<PeopleIcon />} iconPosition="start" />
+        <Tab label="Simulação" value="simulation" icon={<SettingsIcon />} iconPosition="start" />
+      </Tabs>
 
       {activeTab === 'cabos' && (
-        <div className="mt-4">
-          <h2>Cabos</h2>
-          <form onSubmit={(e) => { e.preventDefault(); handleCreate('cabos', newCabo, () => setNewCabo({ nome: '', coeficiente: 0, preco: 0 })) }} className="mb-3">
-              <div className="row g-3">
-                  <div className="col"><input type="text" name="nome" value={newCabo.nome} onChange={(e) => setNewCabo({...newCabo, nome: e.target.value})} className="form-control" placeholder="Nome" required /></div>
-                  <div className="col"><input type="number" step="0.01" name="coeficiente" value={newCabo.coeficiente} onChange={(e) => setNewCabo({...newCabo, coeficiente: parseFloat(e.target.value)})} className="form-control" placeholder="Coeficiente" required /></div>
-                  <div className="col"><input type="number" step="0.01" name="preco" value={newCabo.preco} onChange={(e) => setNewCabo({...newCabo, preco: parseFloat(e.target.value)})} className="form-control" placeholder="Preço" required /></div>
-                  <div className="col-auto"><button type="submit" className="btn btn-primary">Adicionar</button></div>
-              </div>
+        <GlassCard sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom>Cabos</Typography>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate('cabos', newCabo, () => setNewCabo({ nome: '', coeficiente: 0, preco: 0 })) }}>
+              <Grid container spacing={2} alignItems="flex-end" sx={{ mb: 3 }}>
+                  <Grid sx={{ width: { xs: '100%', sm: '33.33%' } }}> {/* Equivalent to xs=12 sm=4 */}
+                      <TextField fullWidth label="Nome" name="nome" value={newCabo.nome} onChange={(e) => setNewCabo({...newCabo, nome: e.target.value})} required />
+                  </Grid>
+                  <Grid sx={{ width: { xs: '100%', sm: '33.33%' } }}> {/* Equivalent to xs=12 sm=4 */}
+                      <TextField fullWidth label="Coeficiente" name="coeficiente" type="number" step="0.01" value={newCabo.coeficiente} onChange={(e) => setNewCabo({...newCabo, coeficiente: parseFloat(e.target.value)})} required />
+                  </Grid>
+                  <Grid sx={{ width: { xs: '100%', sm: '33.33%' } }}> {/* Equivalent to xs=12 sm=4 */}
+                      <TextField fullWidth label="Preço" name="preco" type="number" step="0.01" value={newCabo.preco} onChange={(e) => setNewCabo({...newCabo, preco: parseFloat(e.target.value)})} required />
+                  </Grid>
+                  <Grid sx={{ width: '100%' }}> {/* Equivalent to xs=12 */}
+                      <Button type="submit" variant="contained" color="primary" startIcon={<AddIcon />} sx={{
+                        background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                        boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                      }}>
+                          Adicionar
+                      </Button>
+                  </Grid>
+              </Grid>
           </form>
-          <table className="table">
-            <thead><tr><th>Nome</th><th>Coeficiente</th><th>Preço</th><th>Ações</th></tr></thead>
-            <tbody>{cabos.map((cabo) => (<tr key={cabo.nome}><td>{cabo.nome}</td><td>{cabo.coeficiente}</td><td>{cabo.preco}</td><td>
-              <button className="btn btn-sm btn-info me-2" onClick={() => openEditCaboModal(cabo)}>Editar</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete('cabos', cabo.nome)}>Deletar</button>
-            </td></tr>))}</tbody>
-          </table>
-        </div>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nome</TableCell>
+                  <TableCell align="right">Coeficiente</TableCell>
+                  <TableCell align="right">Preço</TableCell>
+                  <TableCell align="center">Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {cabos.map((cabo) => (
+                  <TableRow key={cabo.nome} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell component="th" scope="row">{cabo.nome}</TableCell>
+                    <TableCell align="right">{cabo.coeficiente}</TableCell>
+                    <TableCell align="right">{cabo.preco}</TableCell>
+                    <TableCell align="center">
+                      <IconButton color="info" onClick={() => openEditCaboModal(cabo)} title="Editar">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDelete('cabos', cabo.nome)} title="Deletar">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </GlassCard>
       )}
 
       {activeTab === 'ips' && (
-        <div className="mt-4">
-          <h2>IPs</h2>
-          <form onSubmit={(e) => { e.preventDefault(); handleCreate('ips', newIp, () => setNewIp({ nome: '', potencia_watts: 0, preco: 0 })) }} className="mb-3">
-              <div className="row g-3">
-                  <div className="col"><input type="text" name="nome" value={newIp.nome} onChange={(e) => setNewIp({...newIp, nome: e.target.value})} className="form-control" placeholder="Nome" required /></div>
-                  <div className="col"><input type="number" step="0.01" name="potencia_watts" value={newIp.potencia_watts} onChange={(e) => setNewIp({...newIp, potencia_watts: parseFloat(e.target.value)})} className="form-control" placeholder="Potência (W)" required /></div>
-                  <div className="col"><input type="number" step="0.01" name="preco" value={newIp.preco} onChange={(e) => setNewIp({...newIp, preco: parseFloat(e.target.value)})} className="form-control" placeholder="Preço" required /></div>
-                  <div className="col-auto"><button type="submit" className="btn btn-primary">Adicionar</button></div>
-              </div>
+        <GlassCard sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom>IPs</Typography>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate('ips', newIp, () => setNewIp({ nome: '', potencia_watts: 0, preco: 0 })) }}>
+              <Grid container spacing={2} alignItems="flex-end" sx={{ mb: 3 }}>
+                  <Grid xs={12} sm={4}>
+                      <TextField fullWidth label="Nome" name="nome" value={newIp.nome} onChange={(e) => setNewIp({...newIp, nome: e.target.value})} required />
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                      <TextField fullWidth label="Potência (Watts)" name="potencia_watts" type="number" step="0.01" value={newIp.potencia_watts} onChange={(e) => setNewIp({...newIp, potencia_watts: parseFloat(e.target.value)})} required />
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                      <TextField fullWidth label="Preço" name="preco" type="number" step="0.01" value={newIp.preco} onChange={(e) => setNewIp({...newIp, preco: parseFloat(e.target.value)})} required />
+                  </Grid>
+                  <Grid xs={12}>
+                      <Button type="submit" variant="contained" color="primary" startIcon={<AddIcon />} sx={{
+                        background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                        boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                      }}>
+                          Adicionar
+                      </Button>
+                  </Grid>
+              </Grid>
           </form>
-          <table className="table">
-            <thead><tr><th>Nome</th><th>Potência (Watts)</th><th>Preço</th><th>Ações</th></tr></thead>
-            <tbody>{ips.map((ip) => (<tr key={ip.nome}><td>{ip.nome}</td><td>{ip.potencia_watts}</td><td>{ip.preco}</td><td>
-              <button className="btn btn-sm btn-info me-2" onClick={() => openEditIpModal(ip)}>Editar</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete('ips', ip.nome)}>Deletar</button>
-            </td></tr>))}</tbody>
-          </table>
-        </div>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nome</TableCell>
+                  <TableCell align="right">Potência (Watts)</TableCell>
+                  <TableCell align="right">Preço</TableCell>
+                  <TableCell align="center">Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {ips.map((ip) => (
+                  <TableRow key={ip.nome} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell component="th" scope="row">{ip.nome}</TableCell>
+                    <TableCell align="right">{ip.potencia_watts}</TableCell>
+                    <TableCell align="right">{ip.preco}</TableCell>
+                    <TableCell align="center">
+                      <IconButton color="info" onClick={() => openEditIpModal(ip)} title="Editar">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDelete('ips', ip.nome)} title="Deletar">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </GlassCard>
       )}
 
       {activeTab === 'trafos' && (
-        <div className="mt-4">
-          <h2>Trafos</h2>
-          <form onSubmit={(e) => { e.preventDefault(); handleCreate('trafos', newTrafo, () => setNewTrafo({ kva: 0 })) }} className="mb-3">
-              <div className="row g-3">
-                  <div className="col"><input type="number" step="0.01" name="kva" value={newTrafo.kva} onChange={(e) => setNewTrafo({ kva: parseFloat(e.target.value) })} className="form-control" placeholder="KVA" required /></div>
-                  <div className="col-auto"><button type="submit" className="btn btn-primary">Adicionar</button></div>
-              </div>
+        <GlassCard sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom>Trafos</Typography>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate('trafos', newTrafo, () => setNewTrafo({ kva: 0 })) }}>
+              <Grid container spacing={2} alignItems="flex-end" sx={{ mb: 3 }}>
+                  <Grid xs={12} sm={6}>
+                      <TextField fullWidth label="KVA" name="kva" type="number" step="0.01" value={newTrafo.kva} onChange={(e) => setNewTrafo({ kva: parseFloat(e.target.value) })} required />
+                  </Grid>
+                  <Grid xs={12} sm={6}>
+                      <Button type="submit" variant="contained" color="primary" startIcon={<AddIcon />} sx={{
+                        background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                        boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                      }}>
+                          Adicionar
+                      </Button>
+                  </Grid>
+              </Grid>
           </form>
-          <table className="table">
-            <thead><tr><th>KVA</th><th>Ações</th></tr></thead>
-            <tbody>{trafos.map((trafo) => (<tr key={trafo.kva}><td>{trafo.kva}</td><td>
-              <button className="btn btn-sm btn-info me-2" onClick={() => openEditTrafoModal(trafo)}>Editar</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete('trafos', trafo.kva)}>Deletar</button>
-            </td></tr>))}</tbody>
-          </table>
-        </div>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>KVA</TableCell>
+                  <TableCell align="center">Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {trafos.map((trafo) => (
+                  <TableRow key={trafo.kva} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell component="th" scope="row">{trafo.kva}</TableCell>
+                    <TableCell align="center">
+                      <IconButton color="info" onClick={() => openEditTrafoModal(trafo)} title="Editar">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDelete('trafos', trafo.kva)} title="Deletar">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </GlassCard>
       )}
 
       {activeTab === 'perfis' && (
-        <div className="mt-4">
-          <h2>Perfis</h2>
-          <form onSubmit={(e) => { e.preventDefault(); handleCreate('perfis', newPerfil, () => setNewPerfil({ nome: '', cqt_max: 0, sobrecarga_max: 0 })) }} className="mb-3">
-              <div className="row g-3">
-                  <div className="col"><input type="text" name="nome" value={newPerfil.nome} onChange={(e) => setNewPerfil({...newPerfil, nome: e.target.value})} className="form-control" placeholder="Nome" required /></div>
-                  <div className="col"><input type="number" step="0.01" name="cqt_max" value={newPerfil.cqt_max} onChange={(e) => setNewPerfil({...newPerfil, cqt_max: parseFloat(e.target.value)})} className="form-control" placeholder="CQT Máx" required /></div>
-                  <div className="col"><input type="number" step="0.01" name="sobrecarga_max" value={newPerfil.sobrecarga_max} onChange={(e) => setNewPerfil({...newPerfil, sobrecarga_max: parseFloat(e.target.value)})} className="form-control" placeholder="Sobrecarga Máx" required /></div>
-                  <div className="col-auto"><button type="submit" className="btn btn-primary">Adicionar</button></div>
-              </div>
+        <GlassCard sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom>Perfis</Typography>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate('perfis', newPerfil, () => setNewPerfil({ nome: '', cqt_max: 0, sobrecarga_max: 0 })) }}>
+              <Grid container spacing={2} alignItems="flex-end" sx={{ mb: 3 }}>
+                  <Grid xs={12} sm={4}>
+                      <TextField fullWidth label="Nome" name="nome" value={newPerfil.nome} onChange={(e) => setNewPerfil({...newPerfil, nome: e.target.value})} required />
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                      <TextField fullWidth label="CQT Máx" name="cqt_max" type="number" step="0.01" value={newPerfil.cqt_max} onChange={(e) => setNewPerfil({...newPerfil, cqt_max: parseFloat(e.target.value)})} required />
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                      <TextField fullWidth label="Sobrecarga Máx" name="sobrecarga_max" type="number" step="0.01" value={newPerfil.sobrecarga_max} onChange={(e) => setNewPerfil({...newPerfil, sobrecarga_max: parseFloat(e.target.value)})} required />
+                  </Grid>
+                  <Grid xs={12}>
+                      <Button type="submit" variant="contained" color="primary" startIcon={<AddIcon />} sx={{
+                        background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                        boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                      }}>
+                          Adicionar
+                      </Button>
+                  </Grid>
+              </Grid>
           </form>
-          <table className="table">
-            <thead><tr><th>Nome</th><th>CQT Máx</th><th>Sobrecarga Máx</th><th>Ações</th></tr></thead>
-            <tbody>{perfis.map((perfil) => (<tr key={perfil.nome}><td>{perfil.nome}</td><td>{perfil.cqt_max}</td><td>{perfil.sobrecarga_max}</td><td>
-              <button className="btn btn-sm btn-info me-2" onClick={() => openEditPerfilModal(perfil)}>Editar</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete('perfis', perfil.nome)}>Deletar</button>
-            </td></tr>))}</tbody>
-          </table>
-        </div>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nome</TableCell>
+                  <TableCell align="right">CQT Máx</TableCell>
+                  <TableCell align="right">Sobrecarga Máx</TableCell>
+                  <TableCell align="center">Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {perfis.map((perfil) => (
+                  <TableRow key={perfil.nome} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell component="th" scope="row">{perfil.nome}</TableCell>
+                    <TableCell align="right">{perfil.cqt_max}</TableCell>
+                    <TableCell align="right">{perfil.sobrecarga_max}</TableCell>
+                    <TableCell align="center">
+                      <IconButton color="info" onClick={() => openEditPerfilModal(perfil)} title="Editar">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDelete('perfis', perfil.nome)} title="Deletar">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </GlassCard>
       )}
 
       {activeTab === 'simulation' && (
-        <div className="mt-4">
-          <h2>Configuração de Simulação</h2>
-          <div className="mb-3">
-            <label htmlFor="simulationCables" className="form-label">Cabos Habilitados para Simulação</label>
-            <select
-              multiple
-              className="form-select"
+        <GlassCard sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom>Configuração de Simulação</Typography>
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel id="simulationCables-label">Cabos Habilitados para Simulação</InputLabel>
+            <Select
+              labelId="simulationCables-label"
               id="simulationCables"
+              multiple
               value={simulationCables}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setSimulationCables(Array.from(e.target.selectedOptions, option => option.value))
+              onChange={(e) =>
+                setSimulationCables(e.target.value as string[])
               }
-              style={{ minHeight: '150px' }}
+              renderValue={(selected) => (selected as string[]).join(', ')}
+              label="Cabos Habilitados para Simulação"
             >
               {cabos.map(cabo => (
-                <option key={cabo.nome} value={cabo.nome}>
+                <MenuItem key={cabo.nome} value={cabo.nome}>
                   {cabo.nome}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-            <div className="form-text">Selecione os cabos que o simulador pode utilizar para readequação.</div>
-          </div>
-          <button className="btn btn-primary">Salvar Configuração de Simulação</button>
-        </div>
+            </Select>
+            <Typography variant="caption" display="block" sx={{ mt: 1 }}>Selecione os cabos que o simulador pode utilizar para readequação.</Typography>
+          </FormControl>
+          <Button variant="contained" color="primary" sx={{
+            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+          }}>
+            Salvar Configuração de Simulação
+          </Button>
+        </GlassCard>
       )}
 
-      {/***** Edit CfgCabo Modal *****/}
+      {/* Edit CfgCabo Modal - Glassmorphism Style */}
       {showEditCaboModal && editingCabo && (
-        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Editar Cabo: {editingCabo.nome}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEditCaboModal(false)}></button>
-              </div>
-              <form onSubmit={handleUpdateCabo}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label htmlFor="editCaboNome" className="form-label">Nome</label>
-                    <input type="text" className="form-control" id="editCaboNome" name="nome" value={editedCaboData.nome || ''} onChange={handleEditCaboChange} required disabled />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editCaboCoeficiente" className="form-label">Coeficiente</label>
-                    <input type="number" step="0.01" className="form-control" id="editCaboCoeficiente" name="coeficiente" value={editedCaboData.coeficiente || 0} onChange={handleEditCaboChange} required />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editCaboPreco" className="form-label">Preço</label>
-                    <input type="number" step="0.01" className="form-control" id="editCaboPreco" name="preco" value={editedCaboData.preco || 0} onChange={handleEditCaboChange} required />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditCaboModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" disabled={updatingCabo}>
-                    {updatingCabo ? 'Salvando...' : 'Salvar Alterações'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <Dialog 
+          open={showEditCaboModal} 
+          onClose={() => setShowEditCaboModal(false)}
+          PaperProps={{
+            sx: {
+              background: 'rgba(255, 255, 255, 0.8)', // Fundo translúcido
+              backdropFilter: 'blur(10px)',            // Efeito de vidro
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            Editar Cabo: {editingCabo?.nome}
+          </DialogTitle>
+          <DialogContent>
+            <Box component="form" sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Nome"
+                name="nome"
+                value={editedCaboData.nome || ''}
+                onChange={handleEditCaboChange}
+                fullWidth
+                variant="outlined"
+                disabled
+              />
+              <TextField
+                label="Coeficiente"
+                name="coeficiente"
+                type="number"
+                inputProps={{ step: "0.01" }}
+                value={editedCaboData.coeficiente || 0}
+                onChange={handleEditCaboChange}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="Preço (R$)"
+                name="preco"
+                type="number"
+                inputProps={{ step: "0.01" }}
+                value={editedCaboData.preco || 0}
+                onChange={handleEditCaboChange}
+                fullWidth
+                variant="outlined"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setShowEditCaboModal(false)} color="inherit">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateCabo} 
+              variant="contained" 
+              disabled={updatingCabo}
+              sx={{ 
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                color: 'white'
+              }}
+            >
+              {updatingCabo ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
 
-      {/***** Edit CfgIP Modal *****/}
+      {/* Edit IP Modal - Glassmorphism Style */}
       {showEditIpModal && editingIp && (
-        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Editar IP: {editingIp.nome}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEditIpModal(false)}></button>
-              </div>
-              <form onSubmit={handleUpdateIp}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label htmlFor="editIpNome" className="form-label">Nome</label>
-                    <input type="text" className="form-control" id="editIpNome" name="nome" value={editedIpData.nome || ''} onChange={handleEditIpChange} required disabled />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editIpPotenciaWatts" className="form-label">Potência (Watts)</label>
-                    <input type="number" step="0.01" className="form-control" id="editIpPotenciaWatts" name="potencia_watts" value={editedIpData.potencia_watts || 0} onChange={handleEditIpChange} required />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editIpPreco" className="form-label">Preço</label>
-                    <input type="number" step="0.01" className="form-control" id="editIpPreco" name="preco" value={editedIpData.preco || 0} onChange={handleEditIpChange} required />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditIpModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" disabled={updatingIp}>
-                    {updatingIp ? 'Salvando...' : 'Salvar Alterações'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <Dialog 
+          open={showEditIpModal} 
+          onClose={() => setShowEditIpModal(false)}
+          PaperProps={{
+            sx: {
+              background: 'rgba(255, 255, 255, 0.8)', // Fundo translúcido
+              backdropFilter: 'blur(10px)',            // Efeito de vidro
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            Editar Iluminação Pública
+          </DialogTitle>
+          <DialogContent>
+            <Box component="form" sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Nome / Tipo"
+                name="nome"
+                value={editedIpData.nome || ''}
+                onChange={handleEditIpChange}
+                fullWidth
+                variant="outlined"
+                disabled // Geralmente o nome/chave não se edita, manter lógica anterior
+              />
+              <TextField
+                label="Potência (Watts)"
+                name="potencia_watts"
+                type="number"
+                value={editedIpData.potencia_watts || 0}
+                onChange={handleEditIpChange}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="Preço (R$)"
+                name="preco"
+                type="number"
+                value={editedIpData.preco || 0}
+                onChange={handleEditIpChange}
+                fullWidth
+                variant="outlined"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setShowEditIpModal(false)} color="inherit">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateIp} 
+              variant="contained" 
+              disabled={updatingIp}
+              sx={{ 
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                color: 'white'
+              }}
+            >
+              {updatingIp ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
 
-      {/***** Edit CfgTrafo Modal *****/}
+      {/* Edit Trafo Modal - Glassmorphism Style */}
       {showEditTrafoModal && editingTrafo && (
-        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Editar Trafo: {editingTrafo.kva} kVA</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEditTrafoModal(false)}></button>
-              </div>
-              <form onSubmit={handleUpdateTrafo}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label htmlFor="editTrafoKva" className="form-label">KVA</label>
-                    <input type="number" step="0.01" className="form-control" id="editTrafoKva" name="kva" value={editedTrafoData.kva || 0} onChange={handleEditTrafoChange} required />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditTrafoModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" disabled={updatingTrafo}>
-                    {updatingTrafo ? 'Salvando...' : 'Salvar Alterações'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <Dialog 
+          open={showEditTrafoModal} 
+          onClose={() => setShowEditTrafoModal(false)}
+          PaperProps={{
+            sx: {
+              background: 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            Editar Transformador
+          </DialogTitle>
+          <DialogContent>
+            <Box component="form" sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+               {/* O ID ou KVA muitas vezes é a chave, verifique se deve ser disabled */}
+              <TextField
+                label="Potência (kVA)"
+                name="kva"
+                type="number"
+                value={editedTrafoData.kva || 0}
+                onChange={handleEditTrafoChange}
+                fullWidth
+                variant="outlined"
+                disabled
+              />
+              {/* Se houver campo preço ou outro no Trafo, adicione aqui. 
+                  Baseado no código anterior, geralmente só se edita o preço ou disponibilidade */}
+               <TextField
+                label="Preço (R$)`"
+                name="preco" 
+                type="number"
+                value={editedTrafoData.preco || 0} // Assumindo que existe campo preço
+                onChange={handleEditTrafoChange}
+                fullWidth
+                variant="outlined"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setShowEditTrafoModal(false)} color="inherit">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateTrafo} 
+              variant="contained" 
+              disabled={updatingTrafo}
+              sx={{ 
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                color: 'white'
+              }}
+            >
+              {updatingTrafo ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
 
-      {/***** Edit CfgPerfil Modal *****/}
+      {/* Edit Perfil Modal - Glassmorphism Style */}
       {showEditPerfilModal && editingPerfil && (
-        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Editar Perfil: {editingPerfil.nome}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEditPerfilModal(false)}></button>
-              </div>
-              <form onSubmit={handleUpdatePerfil}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label htmlFor="editPerfilNome" className="form-label">Nome</label>
-                    <input type="text" className="form-control" id="editPerfilNome" name="nome" value={editedPerfilData.nome || ''} onChange={handleEditPerfilChange} required disabled />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editPerfilCqtMax" className="form-label">CQT Máx</label>
-                    <input type="number" step="0.01" className="form-control" id="editPerfilCqtMax" name="cqt_max" value={editedPerfilData.cqt_max || 0} onChange={handleEditPerfilChange} required />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="editPerfilSobrecargaMax" className="form-label">Sobrecarga Máx</label>
-                    <input type="number" step="0.01" className="form-control" id="editPerfilSobrecargaMax" name="sobrecarga_max" value={editedPerfilData.sobrecarga_max || 0} onChange={handleEditPerfilChange} required />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditPerfilModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" disabled={updatingPerfil}>
-                    {updatingPerfil ? 'Salvando...' : 'Salvar Alterações'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <Dialog 
+          open={showEditPerfilModal} 
+          onClose={() => setShowEditPerfilModal(false)}
+          PaperProps={{
+            sx: {
+              background: 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            Editar Perfil de Configuração
+          </DialogTitle>
+          <DialogContent>
+            <Box component="form" sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Nome do Perfil"
+                name="nome"
+                value={editedPerfilData.nome || ''}
+                onChange={handleEditPerfilChange}
+                fullWidth
+                variant="outlined"
+                disabled // Chave primária não editável
+              />
+              <TextField
+                label="Queda de Tensão Máxima (%)"
+                name="cqt_max"
+                type="number"
+                inputProps={{ step: "0.01" }}
+                value={editedPerfilData.cqt_max || 0}
+                onChange={handleEditPerfilChange}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="Sobrecarga Máxima (%)"
+                name="sobrecarga_max"
+                type="number"
+                inputProps={{ step: "0.01" }}
+                value={editedPerfilData.sobrecarga_max || 0}
+                onChange={handleEditPerfilChange}
+                fullWidth
+                variant="outlined"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setShowEditPerfilModal(false)} color="inherit">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdatePerfil} 
+              variant="contained" 
+              disabled={updatingPerfil}
+              sx={{ 
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                color: 'white'
+              }}
+            >
+              {updatingPerfil ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
-    </div>
+    </Box>
   );
 };
 

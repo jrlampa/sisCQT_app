@@ -9,6 +9,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import GlassCard from './GlassCard'; // Import GlassCard
+import { Box, Grid, Typography, List, ListItem, ListItemText, Alert } from '@mui/material'; // Import MUI components
 
 ChartJS.register(
   CategoryScale,
@@ -55,50 +57,52 @@ const CalculationResult: React.FC<CalculationResultProps> = ({ results }) => {
   };
 
   return (
-    <div className="mt-4">
-      <h3>Resultados do Cálculo</h3>
+    <GlassCard sx={{ mt: 4 }}>
+      <Typography variant="h5" gutterBottom>Resultados do Cálculo</Typography>
       
-      <div className="row">
-        <div className="col-md-6">
-          <h4>KPIs</h4>
-          <ul className="list-group">
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h6" gutterBottom>KPIs</Typography>
+          <List>
             {Object.entries(kpis).map(([key, value]) => (
-              <li key={key} className="list-group-item">
-                <strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : value}
-              </li>
+              <ListItem key={key} disablePadding>
+                <ListItemText primary={<Typography component="span" variant="body1" fontWeight="bold">{key}:</Typography>} secondary={typeof value === 'object' ? JSON.stringify(value) : value} />
+              </ListItem>
             ))}
-          </ul>
-        </div>
-        <div className="col-md-6">
-          <h4>Avisos</h4>
+          </List>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h6" gutterBottom>Avisos</Typography>
           {avisos.length > 0 ? (
-            <ul className="list-group">
+            <List>
               {avisos.map((aviso, index) => (
-                <li key={index} className="list-group-item list-group-item-warning">
-                  {aviso}
-                </li>
+                <ListItem key={index} disablePadding>
+                  <Alert severity="warning" sx={{ width: '100%' }}>{aviso}</Alert>
+                </ListItem>
               ))}
-            </ul>
+            </List>
           ) : (
-            <div className="alert alert-success">Nenhum aviso.</div>
+            <Alert severity="success">Nenhum aviso.</Alert>
           )}
-        </div>
-      </div>
+        </Grid>
+      </Grid>
       
-      <div className="mt-4">
-        <h4>Gráfico de Queda de Tensão</h4>
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" gutterBottom>Gráfico de Queda de Tensão</Typography>
         <Bar options={chartOptions} data={chartData} />
-      </div>
+      </Box>
 
       {/* Technical Suggestions Component */}
       {kpis.baricentro_analysis && results.recomendacoes && (
-        <TechnicalSuggestions
-          recomendacoes={results.recomendacoes}
-          baricentroAnalysis={kpis.baricentro_analysis}
-          avisos={avisos}
-        />
+        <Box sx={{ mt: 4 }}>
+          <TechnicalSuggestions
+            recomendacoes={results.recomendacoes}
+            baricentroAnalysis={kpis.baricentro_analysis}
+            avisos={avisos}
+          />
+        </Box>
       )}
-    </div>
+    </GlassCard>
   );
 };
 

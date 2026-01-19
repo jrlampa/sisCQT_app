@@ -15,11 +15,14 @@ import {
   ListItemText,
   CssBaseline,
   IconButton,
+  Divider,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EngineeringIcon from '@mui/icons-material/Engineering';
-import { styled, useTheme, Theme } from '@mui/material/styles';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import { styled, useTheme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 
 const drawerWidth = 240;
 
@@ -28,6 +31,7 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
 }>(({ theme, open }) => ({
   flexGrow: 1,
   padding: theme.spacing(3),
+  paddingTop: `calc(${theme.mixins.toolbar.minHeight}px + 16px + ${theme.spacing(3)})`, // Account for AppBar height + top margin + existing padding
   transition: theme.transitions.create('margin', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
@@ -47,14 +51,32 @@ const AppBarStyled = styled(AppBar, {
 })<{
   open?: boolean;
 }>(({ theme, open }) => ({
-  transition: theme.transitions.create(['margin', 'width'], {
+  // Glassmorphism styles
+  background: 'rgba(255, 255, 255, 0.65)',
+  backdropFilter: 'blur(16px)',
+  border: '1px solid rgba(255, 255, 255, 0.8)',
+  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+  borderRadius: '16px',
+  color: theme.palette.text.primary, // Ensure text color is readable against glassmorphism
+
+  // Floating effect
+  top: '16px', // Margin from top
+  left: '16px', // Margin from left
+  right: '16px', // Margin from right
+  width: `calc(100% - 32px)`, // Adjust width for side margins
+  position: 'fixed', // Keep it fixed at the top
+
+  // Transitions for drawer open/close
+  transition: theme.transitions.create(['width', 'margin', 'border-radius', 'left', 'right'], { // Add border-radius, left, right to transition
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
   ...(open && {
-    width: `calc(100% - ${drawerWidth}px)`,
-    marginLeft: `${drawerWidth}px`,
-    transition: theme.transitions.create(['margin', 'width'], {
+    marginLeft: `${drawerWidth + 16}px`, // Adjust marginLeft for drawer and left margin of AppBar
+    width: `calc(100% - ${drawerWidth + 32}px)`, // Adjust width for drawer and side margins
+    left: `${drawerWidth + 16}px`, // Adjust left for drawer to prevent overlap
+    right: '16px',
+    transition: theme.transitions.create(['width', 'margin', 'border-radius', 'left', 'right'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
@@ -62,11 +84,11 @@ const AppBarStyled = styled(AppBar, {
 }));
 
 const DrawerHeader = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: theme.spacing(0, 1),
   // necessary for content to be below app bar
   ...theme.mixins.toolbar,
+  paddingTop: '16px', // Account for AppBar's top margin
+  paddingLeft: theme.spacing(1), // Keep existing left padding
+  paddingRight: theme.spacing(1), // Keep existing right padding
   justifyContent: 'flex-end',
 }));
 
@@ -125,7 +147,7 @@ function App() {
           <ListItem disablePadding>
             <ListItemButton onClick={() => { setPage('projetos'); handleDrawerClose(); }}>
               <ListItemIcon>
-                <EngineeringIcon /> {/* Projects Icon */}
+                <DashboardIcon /> {/* Projects Icon */}
               </ListItemIcon>
               <ListItemText primary="Projetos" />
             </ListItemButton>

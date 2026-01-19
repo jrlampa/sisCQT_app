@@ -1,4 +1,21 @@
 import React from 'react';
+import GlassCard from './GlassCard'; // Import GlassCard
+import {
+  Box,
+  Typography,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Card, // Using Card for Baricentro Analysis
+  CardContent,
+  CardHeader,
+  IconButton,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 interface Recommendation {
   titulo: string;
@@ -22,68 +39,60 @@ const TechnicalSuggestions: React.FC<TechnicalSuggestionsProps> = ({
   avisos,
 }) => {
   return (
-    <div className="mt-4">
-      <h3>Diagnóstico e Sugestões Técnicas</h3>
+    <Box sx={{ mt: 4 }}>
+      <Typography variant="h5" gutterBottom>Diagnóstico e Sugestões Técnicas</Typography>
 
       {baricentroAnalysis && (
-        <div className="card mb-3">
-          <div className="card-header">Análise de Baricentro Elétrico</div>
-          <div className="card-body">
-            <h5 className="card-title">Status: {baricentroAnalysis.status}</h5>
-            <p className="card-text">{baricentroAnalysis.msg}</p>
-          </div>
-        </div>
+        <GlassCard sx={{ mb: 3 }}>
+          <CardHeader title={<Typography variant="h6">Análise de Baricentro Elétrico</Typography>} />
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>Status: {baricentroAnalysis.status}</Typography>
+            <Typography variant="body1">{baricentroAnalysis.msg}</Typography>
+          </CardContent>
+        </GlassCard>
       )}
 
       {recomendacoes.length > 0 ? (
-        <div className="mb-3">
-          <h4>Recomendações de Engenharia</h4>
-          <div className="accordion" id="recommendationsAccordion">
-            {recomendacoes.map((rec, index) => (
-              <div className="accordion-item" key={index}>
-                <h2 className="accordion-header" id={`heading${index}`}>
-                  <button
-                    className="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target={`#collapse${index}`}
-                    aria-expanded="false"
-                    aria-controls={`collapse${index}`}
-                  >
-                    {rec.titulo}
-                  </button>
-                </h2>
-                <div
-                  id={`collapse${index}`}
-                  className="accordion-collapse collapse"
-                  aria-labelledby={`heading${index}`}
-                  data-bs-parent="#recommendationsAccordion"
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>Recomendações de Engenharia</Typography>
+          {recomendacoes.map((rec, index) => (
+            <GlassCard key={index} sx={{ mb: 1 }}> {/* Each accordion item is a GlassCard */}
+              <Accordion elevation={0} sx={{ background: 'transparent' }}> {/* Remove default Accordion shadow/background */}
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  aria-controls={`panel${index}-content`}
+                  id={`panel${index}-header`}
                 >
-                  <div className="accordion-body">{rec.texto}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+                  <Typography variant="subtitle1">{rec.titulo}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="body2">{rec.texto}</Typography>
+                </AccordionDetails>
+              </Accordion>
+            </GlassCard>
+          ))}
+        </Box>
       ) : (
-        <div className="alert alert-success">
+        <Alert severity="success" sx={{ mt: 3 }}>
           Nenhuma recomendação de engenharia adicional necessária.
-        </div>
+        </Alert>
       )}
 
       {avisos.length > 0 && (
-        <div className="mt-3">
-          <h4>Avisos Gerais</h4>
-          <ul className="list-group">
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" gutterBottom>Avisos Gerais</Typography>
+          <List>
             {avisos.map((aviso, index) => (
-              <li key={index} className="list-group-item list-group-item-warning">
-                {aviso}
-              </li>
+              <ListItem key={index} disablePadding>
+                <Alert severity="warning" sx={{ width: '100%', mb: 1 }}>
+                  {aviso}
+                </Alert>
+              </ListItem>
             ))}
-          </ul>
-        </div>
+          </List>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
